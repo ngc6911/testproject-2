@@ -2,13 +2,11 @@ package org.vktest.vktestapp.data.remote;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.support.annotation.Nullable;
 
 import com.vk.sdk.VKAccessToken;
 
 import org.vktest.vktestapp.AppExecutors;
 import org.vktest.vktestapp.data.remote.api.API;
-import org.vktest.vktestapp.data.remote.api.VKAlbum;
 import org.vktest.vktestapp.data.remote.api.VKAlbumsList;
 import org.vktest.vktestapp.data.remote.api.VKBaseResponse;
 import org.vktest.vktestapp.data.remote.api.VKPhoto;
@@ -16,8 +14,6 @@ import org.vktest.vktestapp.data.remote.api.VKPhotosList;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -72,7 +68,29 @@ public class RemoteDS implements RemoteDataSource{
 
     @Override
     public void getPhotos(long albumId, int offset, GetPhotosCallback callback) {
+        mAppExecutors.getNetworkIO().execute(() -> {
+            try {
+                Response<VKBaseResponse<VKPhotosList>> r =
+                        mApi.getPhotosFromAlbum(
+                                null, albumId,
+                                0, 1,
+                                PHOTOS_FETCH_COUNT, offset).execute();
 
+                VKBaseResponse<VKPhotosList> vkPhotosListResponse = r.body();
+
+                if (vkPhotosListResponse != null && vkPhotosListResponse.isSuccessful()) {
+                    mAppExecutors.getMainThread()
+                            .execute(() -> callback.onSuccess(vkPhotosListResponse.getSuccess()));
+
+                } else if(vkPhotosListResponse != null && !vkPhotosListResponse.isSuccessful()){
+                    mAppExecutors.getMainThread().execute(callback::onError);
+                }
+
+            } catch (IOException e) {
+                callback.onError();
+                e.printStackTrace();
+            }
+        });
     }
 
     @Override
