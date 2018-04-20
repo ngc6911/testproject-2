@@ -77,20 +77,6 @@ public class LocalDS implements LocalDataSource {
     }
 
     @Override
-    public void getPhoto(String path, GetPhotoCallback callback) {
-        mAppExecutors.getDiskIO().execute(() -> {
-            try {
-                Bitmap bitmap = mFileStorage.getBitmap( path, mSettings.getStorageMode());
-                callback.onSuccess(bitmap);
-            } catch (IOException e) {
-                callback.onError();
-                e.printStackTrace();
-            }
-        });
-    }
-
-
-    @Override
     public void getGalleryPhotos(long albumId, long latestPhotoId, PhotoCallback callback) {
         mAppExecutors.getDiskIO().execute(() -> {
             AlbumPhotos albumPhotos =
@@ -117,10 +103,5 @@ public class LocalDS implements LocalDataSource {
                 }
             }
         });
-    }
-
-    @Override
-    public void getGalleryPhotos(PhotoCallback callback) {
-
     }
 }

@@ -25,10 +25,6 @@ public interface RemoteDataSource {
 
     void getAlbums(Integer offset, GetAlbumsCallback albumsCallback);
 
-    void loadInitialData(VKPhoto.SizeClass sizeClass, GetInitialDataCallback callback);
-
-    void getPhotos(GetPhotosCallback callback);
-
     void getPhotos(long albumId, int offset, GetPhotosCallback callback);
 
     void fetchBitmap(VKPhoto vkPhoto, FetchPhotoCallback callback);

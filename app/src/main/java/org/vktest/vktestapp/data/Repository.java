@@ -16,7 +16,6 @@ public interface Repository {
     }
 
     interface GetPhotosCallback {
-        void onSuccess(List<Photo> photos);
         void onSuccess(Photo photos);
         void onError();
     }
@@ -25,7 +24,6 @@ public interface Repository {
     void checkAuthorizationState(AutorizationCallback callback);
     void checkAuthorizationResult(int requestCode, int resultCode, Intent data,
                                   AutorizationCallback callback);
-    void getPhotos(GetPhotosCallback getPhotosCallback);
 
     void getPhotos(Photo lastPhoto, GetPhotosCallback getPhotosCallback);
 

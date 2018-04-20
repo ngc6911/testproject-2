@@ -21,17 +21,5 @@ public class ImageGalleryPresenter extends BasePresenter<ImageGalleryView> {
     protected void onFirstViewAttach() {
         super.onFirstViewAttach();
         TestApp.getsAppComponent().inject(this);
-
-//        mRepository.getPhotos(new Repository.GetPhotosCallback() {
-//            @Override
-//            public void onSuccess(List<Photo> photos) {
-//                getViewState().renderPhotos(photos);
-//            }
-//
-//            @Override
-//            public void onError() {
-//
-//            }
-//        });
     }
 }
