@@ -6,9 +6,9 @@ import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.support.annotation.Nullable;
-import android.util.LruCache;
 
 import org.vktest.vktestapp.data.local.LocalDataSource;
+import org.vktest.vktestapp.data.local.cache.ImageCache;
 import org.vktest.vktestapp.data.local.db.entities.PhotoEntity;
 import org.vktest.vktestapp.data.remote.AuthDataSource;
 import org.vktest.vktestapp.data.remote.RemoteDataSource;
@@ -18,9 +18,7 @@ import org.vktest.vktestapp.data.remote.api.VKPhoto;
 import org.vktest.vktestapp.data.remote.api.VKPhotosList;
 import org.vktest.vktestapp.presentation.models.Photo;
 
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -33,15 +31,16 @@ public class RepositoryImpl implements Repository {
     private LocalDataSource mLocalDS;
 
     private Context mContext;
-    private LruCache<String, Bitmap> photosMemoryCache;
+    private ImageCache mImageCache;
 
     @Inject
     public RepositoryImpl(AuthDataSource remoteAuthDS, LocalDataSource localDataSource,
-                          RemoteDataSource remoteDataSource, Context context) {
+                          RemoteDataSource remoteDataSource, ImageCache cache, Context context) {
         mContext = context;
         mAuthDataSource = remoteAuthDS;
         mRemoteDS = remoteDataSource;
         mLocalDS = localDataSource;
+        mImageCache = cache;
     }
 
     @Override
@@ -99,7 +98,7 @@ public class RepositoryImpl implements Repository {
                     public void onSuccess(PhotoEntity photoEntity, Bitmap smallBitmap) {
                         Photo photo = DataUtils.photoEntityToModel(photoEntity);
 
-                        photosMemoryCache.put(photo.getPhotoThumbBitmapPath(), smallBitmap);
+                        mImageCache.putBitmap(photo.getPhotoThumbBitmapPath(), smallBitmap);
                         getPhotosCallback.onSuccess(photo);
                     }
 
@@ -160,8 +159,7 @@ public class RepositoryImpl implements Repository {
 
                             VKAlbum album = albumIterator.next();
 
-                            fetchPhotos(album.getId(), 0, callback);
-
+                            callback.onNetworkPhotosFetchRequired(album.getId(), 0);
 
                             if(album.getSize() >= RemoteDataSource.PHOTOS_FETCH_COUNT) {
                                 fetchCount += RemoteDataSource.PHOTOS_FETCH_COUNT;
