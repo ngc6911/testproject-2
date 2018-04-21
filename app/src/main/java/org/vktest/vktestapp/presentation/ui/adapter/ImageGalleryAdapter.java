@@ -8,17 +8,20 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 
 import org.vktest.vktestapp.R;
+import org.vktest.vktestapp.data.local.cache.BitmapHelper;
 import org.vktest.vktestapp.presentation.models.Photo;
 
-import java.util.ArrayList;
-import java.util.List;
+import javax.inject.Inject;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 
 public class ImageGalleryAdapter extends RecyclerView.Adapter<ImageGalleryAdapter.VHolder> {
 
-    private List<Photo> photosList = new ArrayList<>();
+    @Inject
+    BitmapHelper bitmapHelper;
+
+    private OnAdapterItemActionListener<Photo> onAdapterItemActionListener;
 
     @NonNull
     @Override
@@ -30,17 +33,30 @@ public class ImageGalleryAdapter extends RecyclerView.Adapter<ImageGalleryAdapte
 
     @Override
     public void onBindViewHolder(@NonNull VHolder holder, int position) {
-//        holder.imgvPhoto.setImageBitmap(photosList.get(position).getPhotoBitmapPath());
+        final Photo photo = bitmapHelper.getPhotosList().get(position);
+
+        holder.itemView.setOnClickListener(v ->
+                onAdapterItemActionListener.onItemClick(photo, position));
+
+        bitmapHelper.setBitmapToImageView(
+                bitmapHelper.getPhotosList().get(position).getPhotoThumbBitmapPath(),
+                holder.imgvPhoto);
+
+        if(bitmapHelper.getPhotosList().size() - position <= 5){
+            onAdapterItemActionListener.onScrollToBottom(photo);
+        }
     }
 
     @Override
     public int getItemCount() {
-        return photosList.size();
+        return bitmapHelper.getPhotosList().size();
     }
 
-    public void addPhotos(List<Photo> photos){
-        photosList.addAll(photos);
-        notifyDataSetChanged();
+    public void addPhoto(Photo photo){
+        if (!bitmapHelper.getPhotosList().contains(photo)){
+            bitmapHelper.getPhotosList().add(photo);
+            notifyItemInserted(bitmapHelper.getPhotosList().size() -1);
+        }
     }
 
     class VHolder extends RecyclerView.ViewHolder{
@@ -52,5 +68,13 @@ public class ImageGalleryAdapter extends RecyclerView.Adapter<ImageGalleryAdapte
             super(itemView);
             ButterKnife.bind(this, itemView);
         }
+    }
+
+    public void setOnAdapterItemActionListener(OnAdapterItemActionListener<Photo> onAdapterItemActionListener) {
+        this.onAdapterItemActionListener = onAdapterItemActionListener;
+    }
+
+    public void unsetOnAdapterItemActionListener() {
+        this.onAdapterItemActionListener = null;
     }
 }
