@@ -1,6 +1,8 @@
 package org.vktest.vktestapp.presentation.models;
 
+import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Locale;
 
 public class Photo {
 
@@ -9,6 +11,8 @@ public class Photo {
     private String photoBitmapPath;
     private String photoThumbBitmapPath;
     private Date date;
+
+    private boolean fetched = false;
 
     private String text = "";
     private int likesCount = 0;
@@ -20,6 +24,14 @@ public class Photo {
         this.photoBitmapPath = photoBitmap;
         this.photoThumbBitmapPath = photoThumbBitmapPath;
         this.date = date;
+    }
+
+    public boolean isFetched() {
+        return fetched;
+    }
+
+    public void setFetched(boolean fetched) {
+        this.fetched = fetched;
     }
 
     public long getAlbumId() {
@@ -54,8 +66,18 @@ public class Photo {
         return date;
     }
 
+    public String getFormattedDate() {
+        SimpleDateFormat sd = new SimpleDateFormat("HH:mm:ss dd.MM.yyyy ",
+                Locale.getDefault());
+        return sd.format(getDate());
+    }
+
     public String getText() {
         return text;
+    }
+
+    public boolean hasText(){
+        return text != null && !text.isEmpty();
     }
 
     public int getLikesCount() {
@@ -64,5 +86,15 @@ public class Photo {
 
     public int getRepostsCount() {
         return repostsCount;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if(obj instanceof Photo){
+            Photo p = (Photo) obj;
+            return photoId == p.photoId;
+        } else {
+            return false;
+        }
     }
 }
