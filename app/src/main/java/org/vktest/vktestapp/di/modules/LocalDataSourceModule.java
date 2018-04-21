@@ -7,6 +7,7 @@ import android.content.SharedPreferences;
 import org.vktest.vktestapp.AppExecutors;
 import org.vktest.vktestapp.data.local.LocalDS;
 import org.vktest.vktestapp.data.local.LocalDataSource;
+import org.vktest.vktestapp.data.local.cache.LruImageCacheWrapper;
 import org.vktest.vktestapp.data.local.db.ImagesDatabase;
 import org.vktest.vktestapp.data.local.storage.files.FileStorage;
 import org.vktest.vktestapp.data.local.storage.files.FileStorageHelper;
@@ -42,6 +43,12 @@ public class LocalDataSourceModule {
     public ImagesDatabase provideImagesDatabase(Context context){
         return Room.databaseBuilder(context, ImagesDatabase.class,
                 ImagesDatabase.DB_NAME).build();
+    }
+
+    @Provides
+    @Singleton
+    public LruImageCacheWrapper provideBitmapCache(LocalDataSource localDataSource){
+        return new LruImageCacheWrapper(localDataSource);
     }
 
     @Provides

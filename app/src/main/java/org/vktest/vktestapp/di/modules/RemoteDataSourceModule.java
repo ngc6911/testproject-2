@@ -1,7 +1,5 @@
 package org.vktest.vktestapp.di.modules;
 
-import android.content.Context;
-
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -39,10 +37,10 @@ public class RemoteDataSourceModule {
 
     @Provides
     @Singleton
-    public Retrofit provideRetrofit(OkHttpClient okHttpClient, Context context){
+    public Retrofit provideRetrofit(OkHttpClient okHttpClient){
         Gson gson = new GsonBuilder()
                 .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
-                .registerTypeAdapter(Date.class, new DateDeserializer(context))
+                .registerTypeAdapter(Date.class, new DateDeserializer())
                 .create();
 
         return new Retrofit.Builder()
