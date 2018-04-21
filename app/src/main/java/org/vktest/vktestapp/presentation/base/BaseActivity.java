@@ -3,9 +3,9 @@ package org.vktest.vktestapp.presentation.base;
 import android.support.annotation.CallSuper;
 import android.widget.Toast;
 
-import com.arellomobile.mvp.MvpActivity;
+import com.arellomobile.mvp.MvpAppCompatActivity;
 
-public abstract class BaseActivity extends MvpActivity implements BaseView{
+public abstract class BaseActivity extends MvpAppCompatActivity implements BaseView{
 
     @CallSuper
     @Override
