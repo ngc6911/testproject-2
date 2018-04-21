@@ -20,6 +20,8 @@ public interface LocalDataSource {
         void onError();
     }
 
+    void getPhoto(String src, GetPhotoCallback callback);
+
     interface Callback{
         void onSuccess();
         void onError();

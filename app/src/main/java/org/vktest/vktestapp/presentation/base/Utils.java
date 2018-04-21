@@ -1,9 +1,10 @@
 package org.vktest.vktestapp.presentation.base;
 
-import android.app.Fragment;
-import android.app.FragmentManager;
-import android.app.FragmentTransaction;
+
 import android.support.annotation.NonNull;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
 
 import static dagger.internal.Preconditions.checkNotNull;
 

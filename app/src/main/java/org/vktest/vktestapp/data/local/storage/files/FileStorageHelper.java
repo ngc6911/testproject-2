@@ -44,7 +44,7 @@ public class FileStorageHelper implements FileStorage {
     }
 
     private void write(Bitmap bitmap, File file) throws IOException {
-        if(file.createNewFile()){
+//        if(file.createNewFile()){
 
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
             bitmap.compress(Bitmap.CompressFormat.PNG, 0, bos);
@@ -55,10 +55,10 @@ public class FileStorageHelper implements FileStorage {
             fos.flush();
             fos.close();
 
-        } else {
-            throw new IOException(String.format("File %s already exists",
-                    file.getAbsolutePath()));
-        }
+//        } else {
+//            throw new IOException(String.format("File %s already exists",
+//                    file.getAbsolutePath()));
+//        }
     }
 
 
