@@ -28,8 +28,8 @@ public class DataUtils {
         entity.setAlbumId(vkPhoto.getAlbumId());
         entity.setDate(vkPhoto.getDate());
         entity.setFetched(false);
-        entity.setRepostsCount(vkPhoto.getRepostsCount());
-        entity.setLikesCount(vkPhoto.getLikesCount());
+        entity.setRepostsCount(vkPhoto.getReposts().getCount());
+        entity.setLikesCount(vkPhoto.getLikes().getCount());
         entity.setText(vkPhoto.getText());
 
         VKPhoto.Size thumbSize = vkPhoto.getSizeClassData(sizeClass);

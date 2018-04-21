@@ -72,7 +72,7 @@ public class RemoteDS implements RemoteDataSource{
             try {
                 Response<VKBaseResponse<VKPhotosList>> r =
                         mApi.getPhotosFromAlbum(
-                                null, albumId,
+                                null, albumId, 1,
                                 0, 1,
                                 PHOTOS_FETCH_COUNT, offset).execute();
 

@@ -16,8 +16,8 @@ public class VKPhoto {
     private String text;
     private Date date;
 
-    private Integer likesCount;
-    private Integer repostsCount;
+    private Likes likes;
+    private Reposts reposts;
 
     public VKPhoto(Long id, Long albumId, Long ownerId) {
         this.id = id;
@@ -84,20 +84,53 @@ public class VKPhoto {
         this.date = date;
     }
 
-    public Integer getLikesCount() {
-        return likesCount;
+    public Likes getLikes() {
+        return likes;
     }
 
-    public void setLikesCount(Integer likesCount) {
-        this.likesCount = likesCount;
+    public void setLikes(Likes likes) {
+        this.likes = likes;
     }
 
-    public Integer getRepostsCount() {
-        return repostsCount;
+    public Reposts getReposts() {
+        return reposts;
     }
 
-    public void setRepostsCount(Integer repostsCount) {
-        this.repostsCount = repostsCount;
+    public void setReposts(Reposts reposts) {
+        this.reposts = reposts;
+    }
+
+    public class Likes {
+        Integer userLikes;
+        Integer count;
+
+        public Integer getUserLikes() {
+            return userLikes;
+        }
+
+        public void setUserLikes(Integer userLikes) {
+            this.userLikes = userLikes;
+        }
+
+        public Integer getCount() {
+            return count;
+        }
+
+        public void setCount(Integer count) {
+            this.count = count;
+        }
+    }
+
+    public class Reposts {
+        Integer count;
+
+        public Integer getCount() {
+            return count;
+        }
+
+        public void setCount(Integer count) {
+            this.count = count;
+        }
     }
 
     public class Size {

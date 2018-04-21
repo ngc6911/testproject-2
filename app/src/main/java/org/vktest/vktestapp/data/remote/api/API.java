@@ -8,18 +8,6 @@ public interface API {
 
     String BASE = "https://api.vk.com/method/";
 
-    @Deprecated
-    @GET("photos.getAll")
-    Call<VKBaseResponse<VKPhotosList>> getUserPhotos(@Query("owner_id") Long ownerId,
-                                                @Query("extended") Integer extended,
-                                                @Query("offset") Integer offset,
-                                                @Query("count") Integer count,
-                                                @Query("photo_sizes") Integer photoSizes,
-                                                @Query("no_service_albums") Integer noServiceAlbums,
-                                                @Query("need_hidden") Integer needHidden,
-                                                @Query("skip_hidden") Integer skipHidden);
-
-
     @GET("photos.getAlbums")
     Call<VKBaseResponse<VKAlbumsList>> getUserAlbums(@Query("owner_id") Long ownerId,
                                                      @Query("count") Integer count,
@@ -29,6 +17,7 @@ public interface API {
     @GET("photos.get")
     Call<VKBaseResponse<VKPhotosList>> getPhotosFromAlbum(@Query("owner_id") Long ownerId,
                                                           @Query("album_id") Long albumId,
+                                                          @Query("extended") Integer extended,
                                                           @Query("rev") Integer order,
                                                           @Query("photo_sizes") Integer photoSizes,
                                                           @Query("count") Integer count,
