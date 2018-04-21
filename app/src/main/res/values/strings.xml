@@ -2,6 +2,10 @@
     <string name="app_name">VKTestApp</string>
     <string name="bttn_text_login">Login</string>
     <string name="txv_welcomescreen_app_desc">Test assignment app</string>
+    <string name="err_toast_txt_common">Error</string>
+    <string name="err_toast_txt_login">Login failed</string>
+
+    <string name="txv_likes_and_reposts_template">Likes: %d Reposts: %d</string>
 
     <integer name="com_vk_sdk_AppId">6447688</integer>
 

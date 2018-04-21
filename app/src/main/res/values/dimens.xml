@@ -4,4 +4,6 @@
     <dimen name="base_corner_radius">4dp</dimen>
     <dimen name="base_button_width">200dp</dimen>
     <dimen name="welcome_vk_logo_side">150dp</dimen>
+    <dimen name="base_list_bottom_margin">4dp</dimen>
+    <dimen name="txv_image_stats">20sp</dimen>
 </resources>
