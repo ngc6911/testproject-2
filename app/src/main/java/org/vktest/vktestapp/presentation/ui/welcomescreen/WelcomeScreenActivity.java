@@ -1,9 +1,10 @@
 package org.vktest.vktestapp.presentation.ui.welcomescreen;
 
-import android.app.Fragment;
+
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.support.v4.app.Fragment;
 
 import com.arellomobile.mvp.presenter.InjectPresenter;
 
@@ -23,9 +24,9 @@ public class WelcomeScreenActivity extends BaseActivity implements WelcomeScreen
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_base_layout);
 
-        Fragment fragment = getFragmentManager().findFragmentById(R.id.content_frame);
+        Fragment fragment = getSupportFragmentManager().findFragmentById(R.id.content_frame);
         if (fragment == null) {
-            Utils.addFragmentToActivity(getFragmentManager(), WelcomeScreenFragment.newInstance(),
+            Utils.addFragmentToActivity(getSupportFragmentManager(), WelcomeScreenFragment.newInstance(),
                     R.id.content_frame);
         }
 
@@ -40,7 +41,7 @@ public class WelcomeScreenActivity extends BaseActivity implements WelcomeScreen
     @Override
     public void renderLoginSuccess() {
         Intent intent = new Intent(this, ImageGalleryActivity.class);
-        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(intent);
     }
 

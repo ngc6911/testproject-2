@@ -1,28 +1,32 @@
 package org.vktest.vktestapp.presentation.ui.imagegallery;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.StaggeredGridLayoutManager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.arellomobile.mvp.MvpFragment;
+import com.arellomobile.mvp.MvpAppCompatFragment;
 import com.arellomobile.mvp.presenter.InjectPresenter;
 
 import org.vktest.vktestapp.R;
+import org.vktest.vktestapp.TestApp;
 import org.vktest.vktestapp.presentation.models.Photo;
 import org.vktest.vktestapp.presentation.presenters.ImageGalleryPresenter;
 import org.vktest.vktestapp.presentation.ui.adapter.ImageGalleryAdapter;
-
-import java.util.List;
+import org.vktest.vktestapp.presentation.ui.adapter.OnAdapterItemActionListener;
+import org.vktest.vktestapp.presentation.ui.imageviewer.ImageViewerActivity;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 
-public class ImageGalleryFragment extends MvpFragment implements ImageGalleryView{
+public class ImageGalleryFragment extends MvpAppCompatFragment implements ImageGalleryView,
+        OnAdapterItemActionListener<Photo> {
 
     @BindView(R.id.rcv_gallery)
     RecyclerView rcvGallery;
@@ -44,21 +48,35 @@ public class ImageGalleryFragment extends MvpFragment implements ImageGalleryVie
                 R.layout.fragment_gallery_layout, container, false);
         ButterKnife.bind(this, v);
 
+        TestApp.getsAppComponent().inject(galleryAdapter);
+        galleryAdapter.setOnAdapterItemActionListener(this);
+
         StaggeredGridLayoutManager staggeredGridLayoutManager =
                 new StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL);
-
         rcvGallery.setAdapter(galleryAdapter);
         rcvGallery.setLayoutManager(staggeredGridLayoutManager);
+        rcvGallery.setItemAnimator(new DefaultItemAnimator());
         return v;
     }
 
     @Override
-    public void renderPhotos(List<Photo> photos) {
-        galleryAdapter.addPhotos(photos);
+    public void renderPhoto(Photo photo) {
+        galleryAdapter.addPhoto(photo);
     }
 
     @Override
     public void renderError(int errStringId) {
 
+    }
+
+    @Override
+    public void onItemClick(Photo item, int position) {
+        Intent intent = new Intent(getActivity(), ImageViewerActivity.class);
+        startActivity(intent);
+    }
+
+    @Override
+    public void onScrollToBottom(Photo lastItem) {
+        mImageGalleryPresenter.getPhotos(lastItem);
     }
 }

@@ -8,7 +8,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 
-import com.arellomobile.mvp.MvpFragment;
+import com.arellomobile.mvp.MvpAppCompatFragment;
 import com.arellomobile.mvp.presenter.InjectPresenter;
 
 import org.vktest.vktestapp.R;
@@ -18,7 +18,7 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 
-public class WelcomeScreenFragment extends MvpFragment implements WelcomeScreenView {
+public class WelcomeScreenFragment extends MvpAppCompatFragment implements WelcomeScreenView {
 
     @BindView(R.id.bttn_login)
     Button bttnLogin;
