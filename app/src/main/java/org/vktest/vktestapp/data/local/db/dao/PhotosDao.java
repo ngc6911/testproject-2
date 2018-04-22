@@ -19,6 +19,8 @@ public interface PhotosDao {
     @Query("SELECT * FROM photos WHERE album_id = :albumId AND id > :lastId ORDER BY date DESC LIMIT 10")
     List<PhotoEntity> getPhotosByAlbum(Long albumId, Long lastId);
 
+    @Query("SELECT * FROM photos WHERE id = :id")
+    PhotoEntity getPhoto(long id);
 
     @Query("SELECT * FROM photos ORDER BY album_id, date DESC")
     List<PhotoEntity> getAllPhotos();

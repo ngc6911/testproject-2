@@ -36,9 +36,13 @@ public class ImageGalleryAdapter extends RecyclerView.Adapter<ImageGalleryAdapte
         final Photo photo = bitmapHelper.getPhotosList().get(position);
 
         holder.itemView.setOnClickListener(v ->
-                onAdapterItemActionListener.onItemClick(photo, position));
+        {
+            bitmapHelper.setCurrentPhoto(position);
+            onAdapterItemActionListener.onItemClick(photo, position);
+        });
 
         bitmapHelper.setBitmapToImageView(
+                bitmapHelper.getPhotosList().get(position).getPhotoId(),
                 bitmapHelper.getPhotosList().get(position).getPhotoThumbBitmapPath(),
                 holder.imgvPhoto);
 
@@ -55,7 +59,7 @@ public class ImageGalleryAdapter extends RecyclerView.Adapter<ImageGalleryAdapte
     public void addPhoto(Photo photo){
         if (!bitmapHelper.getPhotosList().contains(photo)){
             bitmapHelper.getPhotosList().add(photo);
-            notifyItemInserted(bitmapHelper.getPhotosList().size() -1);
+            notifyItemInserted(bitmapHelper.getPhotosList().size() - 1);
         }
     }
 

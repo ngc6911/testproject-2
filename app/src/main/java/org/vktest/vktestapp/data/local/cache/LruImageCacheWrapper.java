@@ -5,6 +5,7 @@ import android.util.LruCache;
 import android.widget.ImageView;
 
 import org.vktest.vktestapp.data.local.LocalDataSource;
+import org.vktest.vktestapp.data.local.db.entities.PhotoEntity;
 import org.vktest.vktestapp.presentation.models.Photo;
 
 import java.util.ArrayList;
@@ -20,7 +21,6 @@ public class LruImageCacheWrapper implements ImageCache, BitmapHelper {
     private LocalDataSource mLocalDataSource;
 
     private List<Photo> photosList = new ArrayList<>();
-    private Photo currentPhoto = null;
     private int currentPosition;
 
     @Inject
@@ -40,16 +40,16 @@ public class LruImageCacheWrapper implements ImageCache, BitmapHelper {
     }
 
     @Override
-    public void setBitmapToImageView(String src, ImageView view) {
+    public void setBitmapToImageView(long id, String src, ImageView view) {
         final Bitmap bitmap = lruCache.get(src);
         if (bitmap != null) {
             view.setImageBitmap(bitmap);
         } else {
-            mLocalDataSource.getPhoto(src, new LocalDataSource.GetPhotoCallback() {
+            mLocalDataSource.getPhoto(id, src, new LocalDataSource.GetPhotoCallback() {
                 @Override
-                public void onSuccess(Bitmap bitmap) {
+                public void onSuccess(PhotoEntity entity, Bitmap bitmap) {
                     lruCache.put(src, bitmap);
-                    setBitmapToImageView(src, view); //If bitmap is still null, there will be onError call, huh?
+                    setBitmapToImageView(id, src, view); //If bitmap is still null, there will be onError call, huh?
                 }
 
                 @Override
@@ -62,14 +62,13 @@ public class LruImageCacheWrapper implements ImageCache, BitmapHelper {
     }
 
     @Override
-    public void setCurrentPhoto(Photo photo, int position) {
-        currentPhoto = photo;
-        currentPosition = position;
+    public Photo getCurrentPhoto() {
+        return photosList.get(currentPosition);
     }
 
     @Override
-    public Photo getCurrentPhoto() {
-        return currentPhoto;
+    public void setCurrentPhoto(int position) {
+        currentPosition = position;
     }
 
     @Override

@@ -53,12 +53,16 @@ public class ImageViewerFragment extends MvpAppCompatFragment implements ImageGa
                 R.layout.fragment_viewer_layout, container, false);
         
         ButterKnife.bind(this, v);
+        String src = bitmapHelper.getCurrentPhoto().getPhotoBitmapPath();
+        bitmapHelper.setBitmapToImageView(
+                bitmapHelper.getCurrentPhoto().getPhotoId(), src, imgvPhotoFullsize);
         return v;
     }
 
     @Override
     public void renderPhoto(Photo photo) {
-        bitmapHelper.setBitmapToImageView(photo.getPhotoBitmapPath(), imgvPhotoFullsize);
+        bitmapHelper.setBitmapToImageView(
+                photo.getPhotoId(), photo.getPhotoBitmapPath(), imgvPhotoFullsize);
     }
 
     @Override

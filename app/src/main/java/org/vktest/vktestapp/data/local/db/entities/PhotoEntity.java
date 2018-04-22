@@ -43,14 +43,14 @@ public class PhotoEntity {
     private Integer repostsCount;
 
     @ColumnInfo(name = "is_fetched")
-    private Boolean isFetched;
+    private Boolean fetched;
 
-    public Boolean getFetched() {
-        return isFetched;
+    public Boolean isFetched() {
+        return fetched;
     }
 
     public void setFetched(Boolean fetched) {
-        isFetched = fetched;
+        this.fetched = fetched;
     }
 
     public Long getId() {

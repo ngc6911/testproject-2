@@ -1,7 +1,6 @@
 package org.vktest.vktestapp.presentation.ui.imageviewer;
 
 import android.os.Bundle;
-import android.os.PersistableBundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
@@ -44,8 +43,8 @@ public class ImageViewerActivity extends BaseActivity implements ImageGalleryVie
     BitmapHelper bitmapHelper;
 
     @Override
-    public void onCreate(@Nullable Bundle savedInstanceState, @Nullable PersistableBundle persistentState) {
-        super.onCreate(savedInstanceState, persistentState);
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_viewer_layout);
         TestApp.getsAppComponent().inject(this);
         ButterKnife.bind(this);
@@ -86,6 +85,7 @@ public class ImageViewerActivity extends BaseActivity implements ImageGalleryVie
 
         @Override
         public Fragment getItem(int position) {
+
             return ImageViewerFragment.newInstance();
         }
 

@@ -3,7 +3,6 @@ package org.vktest.vktestapp.data.remote;
 import android.graphics.Bitmap;
 
 import org.vktest.vktestapp.data.remote.api.VKAlbumsList;
-import org.vktest.vktestapp.data.remote.api.VKPhoto;
 import org.vktest.vktestapp.data.remote.api.VKPhotosList;
 
 public interface RemoteDataSource {
@@ -16,18 +15,11 @@ public interface RemoteDataSource {
         void onError();
     }
 
-    interface GetInitialDataCallback {
-        void onAlbumsFetched(VKAlbumsList albumsList);
-        void onPhotoFetched(VKPhoto photo, Bitmap thumb_bitmap);
-        void onFinish();
-        void onError();
-    }
-
     void getAlbums(Integer offset, GetAlbumsCallback albumsCallback);
 
     void getPhotos(long albumId, int offset, GetPhotosCallback callback);
 
-    void fetchBitmap(VKPhoto vkPhoto, FetchPhotoCallback callback);
+    void fetchBitmap(String src, FetchPhotoCallback callback);
 
     interface GetPhotosCallback {
         void onSuccess(VKPhotosList photos);
@@ -35,7 +27,7 @@ public interface RemoteDataSource {
     }
 
     interface FetchPhotoCallback {
-        void onSuccess(VKPhoto photo, Bitmap photoBitmap);
+        void onSuccess(Bitmap photoBitmap);
         void onError();
     }
 }

@@ -5,8 +5,6 @@ import android.content.Intent;
 
 import org.vktest.vktestapp.presentation.models.Photo;
 
-import java.util.List;
-
 public interface Repository {
 
     interface AutorizationCallback{
@@ -26,5 +24,5 @@ public interface Repository {
                                   AutorizationCallback callback);
 
     void getPhotos(Photo lastPhoto, GetPhotosCallback getPhotosCallback);
-
+    void getLargePhoto(Photo photo, GetPhotosCallback callback);
 }

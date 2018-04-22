@@ -92,6 +92,32 @@ public class RepositoryImpl implements Repository {
     }
 
     @Override
+    public void getLargePhoto(Photo photo, GetPhotosCallback callback) {
+        mLocalDS.getPhoto(photo.getPhotoId(), photo.getPhotoBitmapPath(),
+                new LocalDataSource.GetPhotoCallback() {
+                    @Override
+                    public void onSuccess(PhotoEntity entity, Bitmap bitmap) {
+                        if(bitmap != null) {
+                            if(!entity.isFetched()) {
+                                entity.setFetched(true);
+                                mLocalDS.putPhoto(entity, null, bitmap, null);
+                            }
+                            mImageCache.putBitmap(photo.getPhotoBitmapPath(), bitmap);
+                            callback.onSuccess(photo);
+                        } else {
+                            fetchLargeBitmap(entity, this);
+                        }
+                    }
+
+                    @Override
+                    public void onError() {
+
+                    }
+                });
+
+    }
+
+    @Override
     public void getPhotos(@Nullable Photo lastPhoto, GetPhotosCallback getPhotosCallback) {
         final LocalDataSource.PhotoCallback callback = new LocalDataSource.PhotoCallback() {
                     @Override
@@ -133,8 +159,14 @@ public class RepositoryImpl implements Repository {
                 new RemoteDataSource.GetPhotosCallback() {
                     @Override
                     public void onSuccess(VKPhotosList photos) {
+                        int screenSize = mContext.getResources().getConfiguration().screenLayout
+                                & Configuration.SCREENLAYOUT_SIZE_MASK;
+
                         for(VKPhoto photo: photos.getItems()){
-                            fetchPhotoBitmap(photo, callback);
+                            final PhotoEntity entity = DataUtils.photoRemoteToEntity(photo,
+                                    DataUtils.getThumbSizeClass(screenSize));
+
+                            fetchSmallBitmap(entity, callback);
                         }
                     }
 
@@ -178,17 +210,31 @@ public class RepositoryImpl implements Repository {
     }
 
 
-    private void fetchPhotoBitmap(VKPhoto photo, LocalDataSource.PhotoCallback callback){
-        mRemoteDS.fetchBitmap(photo, new RemoteDataSource.FetchPhotoCallback() {
+    private void fetchSmallBitmap(PhotoEntity entity, LocalDataSource.PhotoCallback callback) {
+
+        String src = entity.getSmallImageURI();
+
+        mRemoteDS.fetchBitmap(src, new RemoteDataSource.FetchPhotoCallback() {
             @Override
-            public void onSuccess(VKPhoto photo, Bitmap photoBitmap) {
-                int screenSize = mContext.getResources().getConfiguration().screenLayout
-                        & Configuration.SCREENLAYOUT_SIZE_MASK;
-
-                PhotoEntity entity = DataUtils.photoRemoteToEntity(photo,
-                        DataUtils.getThumbSizeClass(screenSize));
-
+            public void onSuccess(Bitmap photoBitmap) {
                 mLocalDS.putPhoto(entity, photoBitmap, null, null);
+                callback.onSuccess(entity, photoBitmap);
+            }
+
+            @Override
+            public void onError() {
+                callback.onError();
+            }
+        });
+    }
+
+    private void fetchLargeBitmap(PhotoEntity entity, LocalDataSource.GetPhotoCallback callback) {
+
+        String src = entity.getLargeImageURI();
+
+        mRemoteDS.fetchBitmap(src, new RemoteDataSource.FetchPhotoCallback() {
+            @Override
+            public void onSuccess(Bitmap photoBitmap) {
                 callback.onSuccess(entity, photoBitmap);
             }
 

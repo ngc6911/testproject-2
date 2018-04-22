@@ -16,11 +16,17 @@ public interface LocalDataSource {
     }
 
     interface GetPhotoCallback{
-        void onSuccess(Bitmap bitmap);
+        void onSuccess(PhotoEntity entity, Bitmap bitmap);
         void onError();
     }
 
-    void getPhoto(String src, GetPhotoCallback callback);
+
+    interface GetPhotoEntityCallback{
+        void onSuccess(PhotoEntity entity);
+        void onError();
+    }
+
+    void getPhoto(long id, String src, GetPhotoCallback callback);
 
     interface Callback{
         void onSuccess();

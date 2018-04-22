@@ -42,17 +42,19 @@ public class LocalDS implements LocalDataSource {
     }
 
     @Override
-    public void getPhoto(String src, GetPhotoCallback callback) {
+    public void getPhoto(long id, String src, GetPhotoCallback callback) {
         mAppExecutors.getDiskIO().execute(() -> {
             try {
+                PhotoEntity entity = mImagesDatabase.photosDao().getPhoto(id);
                 final Bitmap bitmap = mFileStorage.getBitmap(src, mSettings.getStorageMode());
-                mAppExecutors.getMainThread().execute(() -> callback.onSuccess(bitmap));
+                mAppExecutors.getMainThread().execute(() -> callback.onSuccess(entity, bitmap));
             } catch (IOException e) {
                 e.printStackTrace();
                 mAppExecutors.getMainThread().execute(callback::onError);
             }
         });
     }
+
 
     @Override
     public void putAlbums(AlbumEntity... albumEntities) {
