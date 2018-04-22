@@ -1,7 +1,6 @@
 package org.vktest.vktestapp.data.local;
 
 import android.graphics.Bitmap;
-import android.support.annotation.Nullable;
 
 import org.vktest.vktestapp.AppExecutors;
 import org.vktest.vktestapp.data.local.db.ImagesDatabase;
@@ -12,6 +11,7 @@ import org.vktest.vktestapp.data.local.storage.FileStorageType;
 import org.vktest.vktestapp.data.local.storage.files.FileStorage;
 import org.vktest.vktestapp.data.local.storage.settings.Settings;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 
 import javax.inject.Inject;
@@ -44,13 +44,19 @@ public class LocalDS implements LocalDataSource {
     @Override
     public void getPhoto(long id, String src, GetPhotoCallback callback) {
         mAppExecutors.getDiskIO().execute(() -> {
+            PhotoEntity entity = mImagesDatabase.photosDao().getPhoto(id);
+
             try {
-                PhotoEntity entity = mImagesDatabase.photosDao().getPhoto(id);
                 final Bitmap bitmap = mFileStorage.getBitmap(src, mSettings.getStorageMode());
                 mAppExecutors.getMainThread().execute(() -> callback.onSuccess(entity, bitmap));
             } catch (IOException e) {
                 e.printStackTrace();
-                mAppExecutors.getMainThread().execute(callback::onError);
+                if(e.getClass() == FileNotFoundException.class){
+                    entity.setFetched(false);
+                    mAppExecutors.getMainThread().execute(() -> callback.onSuccess(entity, null));
+                } else {
+                    mAppExecutors.getMainThread().execute(callback::onError);
+                }
             }
         });
     }
@@ -63,8 +69,7 @@ public class LocalDS implements LocalDataSource {
     }
 
     @Override
-    public void putPhoto(PhotoEntity photoEntity, @Nullable Bitmap smallBitmap,
-                         @Nullable Bitmap largeBitmap, @Nullable Callback callback) {
+    public void putPhoto(PhotoEntity photoEntity, Bitmap smallBitmap, Bitmap largeBitmap) {
         mAppExecutors.getDiskIO().execute(() -> {
             mImagesDatabase.photosDao().addPhoto(photoEntity);
             try {
@@ -78,15 +83,8 @@ public class LocalDS implements LocalDataSource {
                             photoEntity.getSmallPhotoFilename(), mSettings.getStorageMode());
                 }
 
-                if (callback != null) {
-                    callback.onSuccess();
-                }
             } catch (IOException e) {
                 e.printStackTrace();
-
-                if (callback != null) {
-                    callback.onError();
-                }
             }
         });
     }
@@ -109,9 +107,9 @@ public class LocalDS implements LocalDataSource {
 
             for(PhotoEntity entity: albumPhotos.getPhotos()){
                 try {
-                    Bitmap bitmap = mFileStorage.getBitmap(entity.getSmallPhotoFilename(),
+                    Bitmap smallBitmap = mFileStorage.getBitmap(entity.getSmallPhotoFilename(),
                             mSettings.getStorageMode());
-                    mAppExecutors.getMainThread().execute(() -> callback.onSuccess(entity, bitmap));
+                    mAppExecutors.getMainThread().execute(() -> callback.onSuccess(entity, smallBitmap));
                 } catch (IOException e) {
                     mAppExecutors.getMainThread().execute(callback::onError);
                     e.printStackTrace();

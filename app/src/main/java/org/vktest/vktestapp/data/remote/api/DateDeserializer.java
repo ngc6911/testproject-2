@@ -13,6 +13,6 @@ public class DateDeserializer implements JsonDeserializer<Date> {
     @Override
     public Date deserialize(JsonElement element, Type arg1, JsonDeserializationContext arg2) throws JsonParseException {
         long date = element.getAsLong();
-            return new Date(date);
+            return new Date(date * 1000);
     }
 }

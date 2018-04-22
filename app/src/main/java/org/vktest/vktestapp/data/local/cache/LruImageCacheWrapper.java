@@ -4,29 +4,23 @@ import android.graphics.Bitmap;
 import android.util.LruCache;
 import android.widget.ImageView;
 
-import org.vktest.vktestapp.data.local.LocalDataSource;
-import org.vktest.vktestapp.data.local.db.entities.PhotoEntity;
 import org.vktest.vktestapp.presentation.models.Photo;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
 public class LruImageCacheWrapper implements ImageCache, BitmapHelper {
 
     private LruCache<String, Bitmap> lruCache;
-    private LocalDataSource mLocalDataSource;
-
     private List<Photo> photosList = new ArrayList<>();
     private int currentPosition;
 
-    @Inject
-    public LruImageCacheWrapper(LocalDataSource localDataSource) {
+    private List<OnHelperDatasetChangesListener> mOnHelperDatasetChangesListeners = new ArrayList<>();
 
-        mLocalDataSource = localDataSource;
+    public LruImageCacheWrapper() {
 
         final int maxMemory = (int) (Runtime.getRuntime().maxMemory() / 1024);
         final int cacheSize = maxMemory / 10;
@@ -40,25 +34,25 @@ public class LruImageCacheWrapper implements ImageCache, BitmapHelper {
     }
 
     @Override
-    public void setBitmapToImageView(long id, String src, ImageView view) {
-        final Bitmap bitmap = lruCache.get(src);
-        if (bitmap != null) {
-            view.setImageBitmap(bitmap);
-        } else {
-            mLocalDataSource.getPhoto(id, src, new LocalDataSource.GetPhotoCallback() {
-                @Override
-                public void onSuccess(PhotoEntity entity, Bitmap bitmap) {
-                    lruCache.put(src, bitmap);
-                    setBitmapToImageView(id, src, view); //If bitmap is still null, there will be onError call, huh?
-                }
+    public void setBitmapToImageView(Photo photo, ImageView view, boolean isThumb) {
+        final String src = isThumb ? photo.getPhotoThumbBitmapPath() : photo.getPhotoBitmapPath();
+        view.setImageBitmap(lruCache.get(src));
+    }
 
-                @Override
-                public void onError() {
-                    //WOW! Here we can insert into view some stub image
-                    //like "sorry, ur picture is gone!!!" or something
-                }
-            });
+    @Override
+    public void addPhoto(Photo photo) {
+        if(!photosList.contains(photo)) {
+            photosList.add(photo);
+
+            for (OnHelperDatasetChangesListener listener : mOnHelperDatasetChangesListeners) {
+                listener.onDatasetChanges();
+            }
         }
+    }
+
+    @Override
+    public Photo getPhoto(int position) {
+        return photosList.get(position);
     }
 
     @Override
@@ -77,12 +71,22 @@ public class LruImageCacheWrapper implements ImageCache, BitmapHelper {
     }
 
     @Override
-    public List<Photo> getPhotosList() {
-        return photosList;
+    public void putBitmap(String key, Bitmap bitmap) {
+        lruCache.put(key, bitmap);
     }
 
     @Override
-    public void putBitmap(String key, Bitmap bitmap) {
-        lruCache.put(key, bitmap);
+    public Bitmap getBitmap(String key) {
+        return lruCache.get(key);
+    }
+
+    @Override
+    public int getPhotoCount() {
+        return photosList.size();
+    }
+
+    @Override
+    public void addOnHelperDatasetChangesListener(OnHelperDatasetChangesListener listener) {
+        mOnHelperDatasetChangesListeners.add(listener);
     }
 }

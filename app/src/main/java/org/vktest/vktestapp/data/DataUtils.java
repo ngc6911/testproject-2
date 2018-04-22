@@ -33,7 +33,17 @@ public class DataUtils {
         entity.setText(vkPhoto.getText());
 
         VKPhoto.Size thumbSize = vkPhoto.getSizeClassData(sizeClass);
-        VKPhoto.Size fullSize = vkPhoto.getSizeClassData(VKPhoto.SizeClass.w);
+        VKPhoto.Size fullSize = null;
+
+        for(VKPhoto.Size size: vkPhoto.getSizes()) {
+            if(fullSize == null){
+                fullSize = size;
+            } else {
+                if(fullSize.getWidth() < size.getWidth()){
+                    fullSize = size;
+                }
+            }
+        }
 
         if (thumbSize != null) {
             entity.setSmallImageURI(thumbSize.getSrc());

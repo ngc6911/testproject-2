@@ -8,6 +8,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.TextView;
 
 import com.arellomobile.mvp.MvpAppCompatFragment;
 import com.arellomobile.mvp.presenter.InjectPresenter;
@@ -16,15 +17,16 @@ import org.vktest.vktestapp.R;
 import org.vktest.vktestapp.TestApp;
 import org.vktest.vktestapp.data.local.cache.BitmapHelper;
 import org.vktest.vktestapp.presentation.models.Photo;
-import org.vktest.vktestapp.presentation.presenters.ImageGalleryPresenter;
+import org.vktest.vktestapp.presentation.presenters.ImageViewerPresenter;
 import org.vktest.vktestapp.presentation.ui.imagegallery.ImageGalleryView;
 
 import javax.inject.Inject;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import butterknife.OnClick;
 
-public class ImageViewerFragment extends MvpAppCompatFragment implements ImageGalleryView {
+public class ImageViewerFragment extends MvpAppCompatFragment implements ImageViewerView {
 
     public static Fragment newInstance() {
         return new ImageViewerFragment();
@@ -33,16 +35,32 @@ public class ImageViewerFragment extends MvpAppCompatFragment implements ImageGa
     @BindView(R.id.imgv_photo_fullsize)
     ImageView imgvPhotoFullsize;
 
+    @BindView(R.id.txv_image_date)
+    TextView txvImageDate;
+
+    @BindView(R.id.txv_image_description)
+    TextView txvImageDescription;
+
+    @BindView(R.id.txv_likes_and_reposts)
+    TextView txvLikesAndReposts;
+
     @Inject
     BitmapHelper bitmapHelper;
 
+    @BindView(R.id.photo_info_block)
+    View photoInfoBlock;
+
+    @BindView(R.id.viewer_root)
+    View viewRoot;
+
     @InjectPresenter
-    ImageGalleryPresenter imageGalleryPresenter;
+    ImageViewerPresenter imageViewerPresenter;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         TestApp.getsAppComponent().inject(this);
+        imageViewerPresenter.getFullsizePhoto();
     }
 
     @Nullable
@@ -53,16 +71,40 @@ public class ImageViewerFragment extends MvpAppCompatFragment implements ImageGa
                 R.layout.fragment_viewer_layout, container, false);
         
         ButterKnife.bind(this, v);
-        String src = bitmapHelper.getCurrentPhoto().getPhotoBitmapPath();
-        bitmapHelper.setBitmapToImageView(
-                bitmapHelper.getCurrentPhoto().getPhotoId(), src, imgvPhotoFullsize);
         return v;
+    }
+
+    @OnClick(R.id.viewer_root)
+    public void toggleInfo(View v){
+        if(photoInfoBlock.getVisibility() == View.VISIBLE){
+            photoInfoBlock.setVisibility(View.GONE);
+        } else {
+            photoInfoBlock.setVisibility(View.VISIBLE);
+        }
     }
 
     @Override
     public void renderPhoto(Photo photo) {
+        txvImageDate.setText(photo.getFormattedDate());
+        if(photo.hasText()){
+            txvImageDescription.setVisibility(View.VISIBLE);
+            txvImageDescription.setText(photo.getText());
+        }
+
+        String template = getResources().getString(R.string.txv_likes_and_reposts_template);
+        txvLikesAndReposts.setText(String.format(template,
+                photo.getLikesCount(), photo.getRepostsCount()));
+
+
         bitmapHelper.setBitmapToImageView(
-                photo.getPhotoId(), photo.getPhotoBitmapPath(), imgvPhotoFullsize);
+                photo,
+                imgvPhotoFullsize,
+                false);
+    }
+
+    @Override
+    public void renderDatasetChanges() {
+
     }
 
     @Override

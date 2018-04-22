@@ -1,15 +1,23 @@
 package org.vktest.vktestapp.data.local.cache;
 
+import android.graphics.Bitmap;
 import android.widget.ImageView;
 
 import org.vktest.vktestapp.presentation.models.Photo;
 
-import java.util.List;
-
 public interface BitmapHelper {
-    void setBitmapToImageView(long id, String src, ImageView view);
-    List<Photo> getPhotosList();
+    void setBitmapToImageView(Photo photo, ImageView view, boolean isThumb);
+
     void setCurrentPhoto(int position);
     int getCurrentPosition();
     Photo getCurrentPhoto();
+    void addPhoto(Photo photo);
+    Photo getPhoto(int position);
+    int getPhotoCount();
+
+    interface OnHelperDatasetChangesListener {
+        void onDatasetChanges();
+    }
+
+    void addOnHelperDatasetChangesListener(OnHelperDatasetChangesListener listener);
 }

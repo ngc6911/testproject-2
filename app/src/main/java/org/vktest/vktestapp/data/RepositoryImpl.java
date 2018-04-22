@@ -8,6 +8,7 @@ import android.graphics.Bitmap;
 import android.support.annotation.Nullable;
 
 import org.vktest.vktestapp.data.local.LocalDataSource;
+import org.vktest.vktestapp.data.local.cache.BitmapHelper;
 import org.vktest.vktestapp.data.local.cache.ImageCache;
 import org.vktest.vktestapp.data.local.db.entities.PhotoEntity;
 import org.vktest.vktestapp.data.remote.AuthDataSource;
@@ -18,7 +19,9 @@ import org.vktest.vktestapp.data.remote.api.VKPhoto;
 import org.vktest.vktestapp.data.remote.api.VKPhotosList;
 import org.vktest.vktestapp.presentation.models.Photo;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -93,33 +96,33 @@ public class RepositoryImpl implements Repository {
 
     @Override
     public void getLargePhoto(Photo photo, GetPhotosCallback callback) {
-        mLocalDS.getPhoto(photo.getPhotoId(), photo.getPhotoBitmapPath(),
-                new LocalDataSource.GetPhotoCallback() {
-                    @Override
-                    public void onSuccess(PhotoEntity entity, Bitmap bitmap) {
-                        if(bitmap != null) {
-                            if(!entity.isFetched()) {
-                                entity.setFetched(true);
-                                mLocalDS.putPhoto(entity, null, bitmap, null);
-                            }
-                            mImageCache.putBitmap(photo.getPhotoBitmapPath(), bitmap);
-                            callback.onSuccess(photo);
-                        } else {
-                            fetchLargeBitmap(entity, this);
-                        }
-                    }
+        Bitmap bitmap = mImageCache.getBitmap(photo.getPhotoBitmapPath());
+        if (bitmap != null) {
+            callback.onSuccess(photo);
+        } else {
+            mLocalDS.getPhoto(photo.getPhotoId(), photo.getPhotoBitmapPath(), new LocalDataSource.GetPhotoCallback() {
+                @Override
+                public void onSuccess(PhotoEntity entity, Bitmap bitmap) {
+                    mImageCache.putBitmap(entity.getBigPhotoFilename(), bitmap);
+                    callback.onSuccess(DataUtils.photoEntityToModel(entity));
+                }
 
-                    @Override
-                    public void onError() {
-
-                    }
-                });
-
+                @Override
+                public void onError() {
+                    callback.onError();
+                }
+            });
+        }
     }
 
     @Override
     public void getPhotos(@Nullable Photo lastPhoto, GetPhotosCallback getPhotosCallback) {
         final LocalDataSource.PhotoCallback callback = new LocalDataSource.PhotoCallback() {
+
+            private int successCounter = 0;
+            private int successLimit;
+            private final List<PhotoEntity> entities = new ArrayList<>();
+
                     @Override
                     public void onSuccess(PhotoEntity photoEntity, Bitmap smallBitmap) {
                         Photo photo = DataUtils.photoEntityToModel(photoEntity);
@@ -166,7 +169,7 @@ public class RepositoryImpl implements Repository {
                             final PhotoEntity entity = DataUtils.photoRemoteToEntity(photo,
                                     DataUtils.getThumbSizeClass(screenSize));
 
-                            fetchSmallBitmap(entity, callback);
+                            fetchBitmaps(entity, callback);
                         }
                     }
 
@@ -210,15 +213,12 @@ public class RepositoryImpl implements Repository {
     }
 
 
-    private void fetchSmallBitmap(PhotoEntity entity, LocalDataSource.PhotoCallback callback) {
-
-        String src = entity.getSmallImageURI();
-
-        mRemoteDS.fetchBitmap(src, new RemoteDataSource.FetchPhotoCallback() {
+    private void fetchBitmaps(PhotoEntity entity, LocalDataSource.PhotoCallback callback) {
+        mRemoteDS.fetchBitmap(entity, new RemoteDataSource.FetchPhotoCallback() {
             @Override
-            public void onSuccess(Bitmap photoBitmap) {
-                mLocalDS.putPhoto(entity, photoBitmap, null, null);
-                callback.onSuccess(entity, photoBitmap);
+            public void onSuccess(Bitmap small, Bitmap large) {
+                mLocalDS.putPhoto(entity, small, large);
+                callback.onSuccess(entity, small);
             }
 
             @Override
@@ -228,20 +228,4 @@ public class RepositoryImpl implements Repository {
         });
     }
 
-    private void fetchLargeBitmap(PhotoEntity entity, LocalDataSource.GetPhotoCallback callback) {
-
-        String src = entity.getLargeImageURI();
-
-        mRemoteDS.fetchBitmap(src, new RemoteDataSource.FetchPhotoCallback() {
-            @Override
-            public void onSuccess(Bitmap photoBitmap) {
-                callback.onSuccess(entity, photoBitmap);
-            }
-
-            @Override
-            public void onError() {
-                callback.onError();
-            }
-        });
-    }
 }

@@ -69,7 +69,8 @@ public class RemoteDataSourceModule {
 
         return new OkHttpClient.Builder()
                 .addInterceptor(apiTokenInterceptor)
-                .addInterceptor(loggingInterceptor).build();
+//                .addInterceptor(loggingInterceptor)
+                .build();
     }
 
     @Provides

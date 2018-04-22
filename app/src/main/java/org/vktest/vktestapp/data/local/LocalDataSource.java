@@ -36,7 +36,7 @@ public interface LocalDataSource {
     void putAlbums(AlbumEntity... albumEntities);
 
     void putPhoto(PhotoEntity photoEntity, @Nullable Bitmap smallBitmap,
-                  @Nullable Bitmap largeBitmap, @Nullable Callback callback);
+                  @Nullable Bitmap largeBitmap);
 
     void getGalleryPhotos(long albumId, long latestPhotoId, PhotoCallback callback);
 }

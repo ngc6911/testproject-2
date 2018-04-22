@@ -6,6 +6,7 @@ import android.graphics.BitmapFactory;
 import com.vk.sdk.VKAccessToken;
 
 import org.vktest.vktestapp.AppExecutors;
+import org.vktest.vktestapp.data.local.db.entities.PhotoEntity;
 import org.vktest.vktestapp.data.remote.api.API;
 import org.vktest.vktestapp.data.remote.api.VKAlbumsList;
 import org.vktest.vktestapp.data.remote.api.VKBaseResponse;
@@ -92,21 +93,31 @@ public class RemoteDS implements RemoteDataSource{
         });
     }
 
-    @Override
-    public void fetchBitmap(String src, FetchPhotoCallback callback) {
-        mAppExecutors.getNetworkIO().execute(() -> {
-            Request r = new Request.Builder().url(src).build();
-            try {
-                okhttp3.Response response = mOkHttpClient.newCall(r).execute();
-                ResponseBody body = response.body();
-                if (body != null) {
-                    InputStream inputStream = body.byteStream();
-                    Bitmap b = BitmapFactory.decodeStream(inputStream);
-                    mAppExecutors.getMainThread().execute(() -> callback.onSuccess(b));
-                }
+    private Bitmap fetchBitmapSync(String src) throws IOException{
+        Request r = new Request.Builder().url(src).build();
+        okhttp3.Response response = mOkHttpClient.newCall(r).execute();
+        ResponseBody body = response.body();
 
+        final Bitmap b;
+        if (body != null) {
+            InputStream inputStream = body.byteStream();
+            b = BitmapFactory.decodeStream(inputStream);
+            return b;
+        } else {
+            throw new IOException(String.format("response body is null for GET from %s: ", src));
+        }
+    }
+
+    @Override
+    public void fetchBitmap(PhotoEntity photoEntity, FetchPhotoCallback callback) {
+        mAppExecutors.getNetworkIO().execute(() -> {
+            try {
+                Bitmap small = fetchBitmapSync(photoEntity.getSmallImageURI());
+                Bitmap large = fetchBitmapSync(photoEntity.getLargeImageURI());
+                mAppExecutors.getMainThread().execute(() -> callback.onSuccess(small, large));
             } catch (IOException e) {
                 e.printStackTrace();
+                callback.onError();
             }
         });
     }

@@ -18,10 +18,13 @@ import butterknife.ButterKnife;
 
 public class ImageGalleryAdapter extends RecyclerView.Adapter<ImageGalleryAdapter.VHolder> {
 
-    @Inject
-    BitmapHelper bitmapHelper;
+    private BitmapHelper bitmapHelper;
 
     private OnAdapterItemActionListener<Photo> onAdapterItemActionListener;
+
+    public ImageGalleryAdapter(BitmapHelper bitmapHelper) {
+        this.bitmapHelper = bitmapHelper;
+    }
 
     @NonNull
     @Override
@@ -33,7 +36,7 @@ public class ImageGalleryAdapter extends RecyclerView.Adapter<ImageGalleryAdapte
 
     @Override
     public void onBindViewHolder(@NonNull VHolder holder, int position) {
-        final Photo photo = bitmapHelper.getPhotosList().get(position);
+        final Photo photo = bitmapHelper.getPhoto(position);
 
         holder.itemView.setOnClickListener(v ->
         {
@@ -41,26 +44,17 @@ public class ImageGalleryAdapter extends RecyclerView.Adapter<ImageGalleryAdapte
             onAdapterItemActionListener.onItemClick(photo, position);
         });
 
-        bitmapHelper.setBitmapToImageView(
-                bitmapHelper.getPhotosList().get(position).getPhotoId(),
-                bitmapHelper.getPhotosList().get(position).getPhotoThumbBitmapPath(),
-                holder.imgvPhoto);
+        bitmapHelper.setBitmapToImageView(bitmapHelper.getPhoto(position),
+                holder.imgvPhoto, true);
 
-        if(bitmapHelper.getPhotosList().size() - position <= 5){
+        if(bitmapHelper.getPhotoCount() - position <= 5){
             onAdapterItemActionListener.onScrollToBottom(photo);
         }
     }
 
     @Override
     public int getItemCount() {
-        return bitmapHelper.getPhotosList().size();
-    }
-
-    public void addPhoto(Photo photo){
-        if (!bitmapHelper.getPhotosList().contains(photo)){
-            bitmapHelper.getPhotosList().add(photo);
-            notifyItemInserted(bitmapHelper.getPhotosList().size() - 1);
-        }
+        return bitmapHelper.getPhotoCount();
     }
 
     class VHolder extends RecyclerView.ViewHolder{

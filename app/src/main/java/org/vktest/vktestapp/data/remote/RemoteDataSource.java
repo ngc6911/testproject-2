@@ -2,6 +2,7 @@ package org.vktest.vktestapp.data.remote;
 
 import android.graphics.Bitmap;
 
+import org.vktest.vktestapp.data.local.db.entities.PhotoEntity;
 import org.vktest.vktestapp.data.remote.api.VKAlbumsList;
 import org.vktest.vktestapp.data.remote.api.VKPhotosList;
 
@@ -19,7 +20,7 @@ public interface RemoteDataSource {
 
     void getPhotos(long albumId, int offset, GetPhotosCallback callback);
 
-    void fetchBitmap(String src, FetchPhotoCallback callback);
+    void fetchBitmap(PhotoEntity entity, FetchPhotoCallback callback);
 
     interface GetPhotosCallback {
         void onSuccess(VKPhotosList photos);
@@ -27,7 +28,7 @@ public interface RemoteDataSource {
     }
 
     interface FetchPhotoCallback {
-        void onSuccess(Bitmap photoBitmap);
+        void onSuccess(Bitmap thumb, Bitmap fullsize);
         void onError();
     }
 }
