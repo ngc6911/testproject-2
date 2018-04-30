@@ -11,7 +11,8 @@ import org.vktest.vktestapp.presentation.ui.imageviewer.ImageViewerView;
 import javax.inject.Inject;
 
 @InjectViewState
-public class ImageViewerPresenter extends BasePresenter<ImageViewerView> {
+public class ImageViewerPresenter extends BasePresenter<ImageViewerView>
+        implements BitmapHelper.OnHelperDatasetChangesListener{
 
     @Inject
     Repository repository;
@@ -26,12 +27,12 @@ public class ImageViewerPresenter extends BasePresenter<ImageViewerView> {
     @Override
     protected void onFirstViewAttach() {
         super.onFirstViewAttach();
-        bitmapHelper.addOnHelperDatasetChangesListener(() -> getViewState().renderDatasetChanges());
+        bitmapHelper.addOnHelperDatasetChangesListener(this);
     }
 
-    public void getFullsizePhoto(){
+    public void getFullsizePhoto(int position){
 
-        repository.getLargePhoto(bitmapHelper.getCurrentPhoto(), new Repository.GetPhotosCallback() {
+        repository.getLargePhoto(bitmapHelper.getPhoto(position), new Repository.GetPhotosCallback() {
             @Override
             public void onSuccess(Photo photos) {
                 getViewState().renderPhoto(photos);
@@ -42,5 +43,10 @@ public class ImageViewerPresenter extends BasePresenter<ImageViewerView> {
 
             }
         });
+    }
+
+    @Override
+    public void onDatasetChanges(int pos) {
+        getViewState().renderDatasetChanges();
     }
 }

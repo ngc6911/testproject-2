@@ -21,6 +21,7 @@ import org.vktest.vktestapp.presentation.models.Photo;
 import org.vktest.vktestapp.presentation.presenters.ImageGalleryPresenter;
 import org.vktest.vktestapp.presentation.ui.adapter.ImageGalleryAdapter;
 import org.vktest.vktestapp.presentation.ui.adapter.OnAdapterItemActionListener;
+import org.vktest.vktestapp.presentation.ui.helpers.PositionSensitiveLayoutManager;
 import org.vktest.vktestapp.presentation.ui.imageviewer.ImageViewerActivity;
 
 import javax.inject.Inject;
@@ -33,6 +34,8 @@ public class ImageGalleryFragment extends MvpAppCompatFragment implements ImageG
 
     @BindView(R.id.rcv_gallery)
     RecyclerView rcvGallery;
+
+    PositionSensitiveLayoutManager mPositionSensitiveLayoutManager;
 
     public static ImageGalleryFragment newInstance() {
         return new ImageGalleryFragment();
@@ -61,10 +64,11 @@ public class ImageGalleryFragment extends MvpAppCompatFragment implements ImageG
         ImageGalleryAdapter adapter = new ImageGalleryAdapter(bitmapHelper);
         adapter.setOnAdapterItemActionListener(this);
 
-        StaggeredGridLayoutManager staggeredGridLayoutManager =
-                new StaggeredGridLayoutManager(4, StaggeredGridLayoutManager.VERTICAL);
+        mPositionSensitiveLayoutManager =
+                new PositionSensitiveLayoutManager(3, StaggeredGridLayoutManager.VERTICAL);
+
         rcvGallery.setAdapter(adapter);
-        rcvGallery.setLayoutManager(staggeredGridLayoutManager);
+        rcvGallery.setLayoutManager(mPositionSensitiveLayoutManager);
         rcvGallery.setItemAnimator(new DefaultItemAnimator());
         return v;
     }
@@ -75,8 +79,11 @@ public class ImageGalleryFragment extends MvpAppCompatFragment implements ImageG
     }
 
     @Override
-    public void renderDatasetChanges() {
-        rcvGallery.getAdapter().notifyDataSetChanged();
+    public void renderDatasetChanges(int position) {
+        RecyclerView.Adapter adapter = rcvGallery.getAdapter();
+        if (adapter != null) {
+            adapter.notifyItemInserted(position);
+        }
     }
 
     @Override
@@ -92,6 +99,9 @@ public class ImageGalleryFragment extends MvpAppCompatFragment implements ImageG
 
     @Override
     public void onScrollToBottom(Photo lastItem) {
-        mImageGalleryPresenter.getPhotos(lastItem);
+        if(mPositionSensitiveLayoutManager.getVisibleCount() > 0) {
+
+            mImageGalleryPresenter.getPhotos(lastItem);
+        }
     }
 }

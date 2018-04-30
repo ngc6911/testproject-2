@@ -3,16 +3,22 @@ package org.vktest.vktestapp.data.local.db.entities;
 import android.arch.persistence.room.ColumnInfo;
 import android.arch.persistence.room.Entity;
 import android.arch.persistence.room.ForeignKey;
+import android.arch.persistence.room.Ignore;
+import android.arch.persistence.room.Index;
 import android.arch.persistence.room.PrimaryKey;
+import android.graphics.Bitmap;
 
 import java.util.Date;
 import java.util.Locale;
 
-@Entity(tableName = "photos", foreignKeys = @ForeignKey(
-                                                        entity = AlbumEntity.class,
-                                                        parentColumns = "id",
-                                                        childColumns = "album_id",
-                                                        onDelete = ForeignKey.CASCADE))
+@Entity(tableName = "photos",
+        indices = {@Index(value = {"id", "album_id"})},
+        foreignKeys = @ForeignKey(
+                entity = AlbumEntity.class,
+                parentColumns = "id",
+                childColumns = "album_id",
+                onDelete = ForeignKey.CASCADE))
+
 public class PhotoEntity {
 
     @PrimaryKey
@@ -30,27 +36,33 @@ public class PhotoEntity {
     @ColumnInfo(name = "date")
     private Date date;
 
-    @ColumnInfo(name = "small_image_uri")
-    private String smallImageURI;
-
-    @ColumnInfo(name = "large_image_uri")
-    private String largeImageURI;
-
     @ColumnInfo(name = "likes_count")
     private Integer likesCount;
 
     @ColumnInfo(name = "reposts_count")
     private Integer repostsCount;
 
-    @ColumnInfo(name = "is_fetched")
-    private Boolean fetched;
 
-    public Boolean isFetched() {
-        return fetched;
+    @Ignore
+    private Bitmap thumbBitmap;
+
+    @Ignore
+    private Bitmap fullSizeBitmap;
+
+    public Bitmap getThumbBitmap() {
+        return thumbBitmap;
     }
 
-    public void setFetched(Boolean fetched) {
-        this.fetched = fetched;
+    public void setThumbBitmap(Bitmap thumbBitmap) {
+        this.thumbBitmap = thumbBitmap;
+    }
+
+    public Bitmap getFullSizeBitmap() {
+        return fullSizeBitmap;
+    }
+
+    public void setFullSizeBitmap(Bitmap fullSizeBitmap) {
+        this.fullSizeBitmap = fullSizeBitmap;
     }
 
     public Long getId() {
@@ -93,14 +105,6 @@ public class PhotoEntity {
         this.date = date;
     }
 
-    public String getLargeImageURI() {
-        return largeImageURI;
-    }
-
-    public void setLargeImageURI(String largeImageURI) {
-        this.largeImageURI = largeImageURI;
-    }
-
     public Integer getLikesCount() {
         return likesCount;
     }
@@ -117,20 +121,12 @@ public class PhotoEntity {
         this.repostsCount = repostsCount;
     }
 
-    public String getSmallImageURI() {
-        return smallImageURI;
-    }
-
-    public void setSmallImageURI(String smallImageURI) {
-        this.smallImageURI = smallImageURI;
-    }
-
-    public String getSmallPhotoFilename(){
+    public String getThumbFilename(){
         return String.format(Locale.getDefault(), "thumb_%d_%d_%d.png",
                 getOwnerId(), getAlbumId(), getId());
     }
 
-    public String getBigPhotoFilename(){
+    public String getFullsizeFilename(){
         return String.format(Locale.getDefault(), "%d_%d_%d.png",
                 getOwnerId(), getAlbumId(), getId());
     }

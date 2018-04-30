@@ -3,24 +3,18 @@ package org.vktest.vktestapp.data;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
-import android.content.res.Configuration;
 import android.graphics.Bitmap;
-import android.support.annotation.Nullable;
 
 import org.vktest.vktestapp.data.local.LocalDataSource;
-import org.vktest.vktestapp.data.local.cache.BitmapHelper;
 import org.vktest.vktestapp.data.local.cache.ImageCache;
+import org.vktest.vktestapp.data.local.db.entities.AlbumEntity;
 import org.vktest.vktestapp.data.local.db.entities.PhotoEntity;
 import org.vktest.vktestapp.data.remote.AuthDataSource;
 import org.vktest.vktestapp.data.remote.RemoteDataSource;
-import org.vktest.vktestapp.data.remote.api.VKAlbum;
 import org.vktest.vktestapp.data.remote.api.VKAlbumsList;
 import org.vktest.vktestapp.data.remote.api.VKPhoto;
-import org.vktest.vktestapp.data.remote.api.VKPhotosList;
 import org.vktest.vktestapp.presentation.models.Photo;
 
-import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 import javax.inject.Inject;
@@ -35,6 +29,8 @@ public class RepositoryImpl implements Repository {
 
     private Context mContext;
     private ImageCache mImageCache;
+
+    private boolean isFetching;
 
     @Inject
     public RepositoryImpl(AuthDataSource remoteAuthDS, LocalDataSource localDataSource,
@@ -56,13 +52,7 @@ public class RepositoryImpl implements Repository {
         mAuthDataSource.checkAuthorization(mContext, new AuthDataSource.AutorizationCallback() {
             @Override
             public void onSuccess() {
-                callback.onSuccess();
-            }
-
-            @Override
-            public void onPending() {
-                //TODO: further send here some resource string id with current app start stage
-                callback.onPending(-1);
+                fetchAlbums(callback);
             }
 
             @Override
@@ -79,12 +69,7 @@ public class RepositoryImpl implements Repository {
                 resultCode, data, new AuthDataSource.AutorizationCallback() {
                     @Override
                     public void onSuccess() {
-                        callback.onSuccess();
-                    }
-
-                    @Override
-                    public void onPending() {
-
+                        fetchAlbums(callback);
                     }
 
                     @Override
@@ -103,7 +88,7 @@ public class RepositoryImpl implements Repository {
             mLocalDS.getPhoto(photo.getPhotoId(), photo.getPhotoBitmapPath(), new LocalDataSource.GetPhotoCallback() {
                 @Override
                 public void onSuccess(PhotoEntity entity, Bitmap bitmap) {
-                    mImageCache.putBitmap(entity.getBigPhotoFilename(), bitmap);
+                    mImageCache.putBitmap(entity.getFullsizeFilename(), bitmap);
                     callback.onSuccess(DataUtils.photoEntityToModel(entity));
                 }
 
@@ -115,110 +100,128 @@ public class RepositoryImpl implements Repository {
         }
     }
 
-    @Override
-    public void getPhotos(@Nullable Photo lastPhoto, GetPhotosCallback getPhotosCallback) {
-        final LocalDataSource.PhotoCallback callback = new LocalDataSource.PhotoCallback() {
+    private void init(GetPhotosListCallback getPhotosListCallback){
+        mLocalDS.getAlbums(new LocalDataSource.GetAlbumEntitiesCallback() {
+            @Override
+            public void onSuccess(List<AlbumEntity> albumEntities) {
+                List<AlbumEntity> toFetchEntities =
+                        DataUtils.filterAlbumsToFetchFrom(albumEntities, RemoteDataSource.PHOTOS_FETCH_COUNT);
 
-            private int successCounter = 0;
-            private int successLimit;
-            private final List<PhotoEntity> entities = new ArrayList<>();
-
-                    @Override
-                    public void onSuccess(PhotoEntity photoEntity, Bitmap smallBitmap) {
-                        Photo photo = DataUtils.photoEntityToModel(photoEntity);
-
-                        mImageCache.putBitmap(photo.getPhotoThumbBitmapPath(), smallBitmap);
-                        getPhotosCallback.onSuccess(photo);
-                    }
+                fetchPhotos(toFetchEntities, DataUtils.maxFetchCountFrom(toFetchEntities,
+                        RemoteDataSource.PHOTOS_FETCH_COUNT), new LocalDataSource.PhotosCallback() {
 
                     @Override
-                    public void onNetworkPhotosFetchRequired(long albumId, int alreadyFetchedCount) {
-                        fetchPhotos(albumId, alreadyFetchedCount,  this);
-                    }
-
-                    @Override
-                    public void onNetworkAlbumsFetchRequired(int alreadyFetchedCount) {
-                        fetchAlbums(alreadyFetchedCount, this);
+                    public void onSuccess(PhotoEntity photoEntity) {
+                        forwardDataToView(photoEntity, getPhotosListCallback);
                     }
 
                     @Override
                     public void onError() {
-                        getPhotosCallback.onError();
+
+                    }
+                });
+            }
+
+            @Override
+            public void onError() {
+
+            }
+        });
+    }
+
+    @Override
+    public void getFirstPhotos(GetPhotosListCallback getPhotosListCallback) {
+        mLocalDS.getGalleryPhotos(new LocalDataSource.PhotoCallback() {
+            @Override
+            public void onPhotoLoaded(List<PhotoEntity> photoEntities) {
+                forwardDataToView(photoEntities, getPhotosListCallback);
+            }
+
+            @Override
+            public void onNoLocalPhotos() {
+                init(getPhotosListCallback);
+            }
+
+            @Override
+            public void onError() {
+
+            }
+        });
+    }
+
+    @Override
+    public void getNextPhotos(Photo lastPhoto, GetPhotosListCallback getPhotosListCallback) {
+        final LocalDataSource.PhotoCallback photoCallback = new LocalDataSource.PhotoCallback() {
+                    @Override
+                    public void onPhotoLoaded(List<PhotoEntity> photoEntities) {
+                        forwardDataToView(photoEntities, getPhotosListCallback);
+                    }
+
+                    @Override
+                    public void onNoLocalPhotos() {
+                        mLocalDS.getAlbums(new LocalDataSource.GetAlbumEntitiesCallback() {
+                            @Override
+                            public void onSuccess(List<AlbumEntity> albumEntities) {
+                                List<AlbumEntity> toFetchEntities =
+                                        DataUtils.filterAlbumsToFetchFrom(albumEntities, RemoteDataSource.PHOTOS_FETCH_COUNT);
+
+                                fetchPhotos(toFetchEntities,
+                                        DataUtils.maxFetchCountFrom(toFetchEntities, RemoteDataSource.PHOTOS_FETCH_COUNT),
+                                        new LocalDataSource.PhotosCallback() {
+                                    @Override
+                                    public void onSuccess(PhotoEntity photoEntity) {
+                                        forwardDataToView(photoEntity, getPhotosListCallback);
+                                    }
+
+                                    @Override
+                                    public void onError() {
+
+                                    }
+                                });
+                            }
+
+                            @Override
+                            public void onError() {
+
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onError() {
+
                     }
                 };
 
-        if(lastPhoto == null){
-            callback.onNetworkAlbumsFetchRequired(0);
-        } else {
-            mLocalDS.getGalleryPhotos(
-                    lastPhoto.getAlbumId(),
-                    lastPhoto.getPhotoId(), callback);
+        mLocalDS.getGalleryPhotos(
+                lastPhoto.getAlbumId(),
+                lastPhoto.getPhotoId(), photoCallback);
+    }
+
+    private void forwardDataToView(List<PhotoEntity> entities, GetPhotosListCallback callback){
+        for(PhotoEntity photoEntity: entities){
+            forwardDataToView(photoEntity, callback);
         }
-
     }
 
-    private void fetchPhotos(long albumId, int alreadyFetched, LocalDataSource.PhotoCallback callback){
-        mRemoteDS.getPhotos(albumId, alreadyFetched / RemoteDataSource.PHOTOS_FETCH_COUNT,
-                new RemoteDataSource.GetPhotosCallback() {
-                    @Override
-                    public void onSuccess(VKPhotosList photos) {
-                        int screenSize = mContext.getResources().getConfiguration().screenLayout
-                                & Configuration.SCREENLAYOUT_SIZE_MASK;
-
-                        for(VKPhoto photo: photos.getItems()){
-                            final PhotoEntity entity = DataUtils.photoRemoteToEntity(photo,
-                                    DataUtils.getThumbSizeClass(screenSize));
-
-                            fetchBitmaps(entity, callback);
-                        }
-                    }
-
-                    @Override
-                    public void onError() {
-
-                    }
-                });
+    private void forwardDataToView(PhotoEntity photoEntity, GetPhotosListCallback callback){
+        mImageCache.putBitmap(
+                photoEntity.getThumbFilename(), photoEntity.getThumbBitmap());
+        callback.onSuccess(DataUtils.photoEntityToModel(photoEntity));
     }
 
-    private void fetchAlbums(int alreadyFetched, LocalDataSource.PhotoCallback callback){
-        mRemoteDS.getAlbums(
-                alreadyFetched / RemoteDataSource.ALBUMS_FETCH_COUNT, new RemoteDataSource.GetAlbumsCallback() {
-                    @Override
-                    public void onSuccess(VKAlbumsList albumsList) {
-                        mLocalDS.putAlbums(DataUtils.vkAlbumsListToAlbumEntities(albumsList));
-
-                        int fetchCount = 0;
-                        Iterator<VKAlbum> albumIterator = albumsList.getItems().iterator();
-                        while (fetchCount < RemoteDataSource.PHOTOS_FETCH_COUNT &&
-                                albumIterator.hasNext()){
-
-                            VKAlbum album = albumIterator.next();
-
-                            callback.onNetworkPhotosFetchRequired(album.getId(), 0);
-
-                            if(album.getSize() >= RemoteDataSource.PHOTOS_FETCH_COUNT) {
-                                fetchCount += RemoteDataSource.PHOTOS_FETCH_COUNT;
-                            } else {
-                                fetchCount += album.getSize();
-                            }
-
-                        }
-                    }
-
-                    @Override
-                    public void onError() {
-                        callback.onError();
-                    }
-                });
-    }
-
-
-    private void fetchBitmaps(PhotoEntity entity, LocalDataSource.PhotoCallback callback) {
-        mRemoteDS.fetchBitmap(entity, new RemoteDataSource.FetchPhotoCallback() {
+    private void fetchPhotos(List<AlbumEntity> albumEntities, int totalPhotos,
+                             LocalDataSource.PhotosCallback callback) {
+        mRemoteDS.getPhotos(albumEntities, totalPhotos, mContext,
+                new RemoteDataSource.GetPhotosListCallback() {
             @Override
-            public void onSuccess(Bitmap small, Bitmap large) {
-                mLocalDS.putPhoto(entity, small, large);
-                callback.onSuccess(entity, small);
+            public void onNewPhoto(VKPhoto vkPhoto, Bitmap thumbBitmap, Bitmap fullsizeBitmap) {
+                cachePhoto(vkPhoto, thumbBitmap, fullsizeBitmap, callback);
+            }
+
+            @Override
+            public void onAlbumFetchFinish(AlbumEntity album) {
+                mLocalDS.updateAlbum(album.getId(), album.getItemsFetchedCount());
             }
 
             @Override
@@ -228,4 +231,47 @@ public class RepositoryImpl implements Repository {
         });
     }
 
+    private void cachePhoto(VKPhoto vkPhoto, Bitmap thumbBitmap, Bitmap fullsizeBitmap,
+                            LocalDataSource.PhotosCallback callback){
+        PhotoEntity entity = DataUtils.photoRemoteToEntity(vkPhoto);
+        entity.setThumbBitmap(thumbBitmap);
+        entity.setFullSizeBitmap(fullsizeBitmap);
+        mLocalDS.putPhoto(entity, new LocalDataSource.GetPhotoEntityCallback() {
+            @Override
+            public void onSuccess(PhotoEntity entity) {
+                callback.onSuccess(entity);
+            }
+
+            @Override
+            public void onError() {
+                callback.onError();
+            }
+        });
+    }
+
+
+    private void fetchAlbums(AutorizationCallback autorizationCallback) {
+        mRemoteDS.getAlbums(new RemoteDataSource.GetAlbumsCallback() {
+            @Override
+            public void onSuccess(VKAlbumsList albumsList) {
+
+                mLocalDS.putAlbums(new LocalDataSource.Callback() {
+                    @Override
+                    public void onSuccess() {
+                        autorizationCallback.onSuccess();
+                    }
+
+                    @Override
+                    public void onError() {
+                        autorizationCallback.onError();
+                    }
+                }, DataUtils.vkAlbumsListToAlbumEntities(albumsList));
+            }
+
+            @Override
+            public void onError() {
+                autorizationCallback.onError();
+            }
+        });
+    }
 }

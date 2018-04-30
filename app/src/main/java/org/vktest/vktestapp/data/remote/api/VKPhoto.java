@@ -1,7 +1,5 @@
 package org.vktest.vktestapp.data.remote.api;
 
-import android.support.annotation.Nullable;
-
 import java.util.Date;
 import java.util.List;
 
@@ -25,8 +23,7 @@ public class VKPhoto {
         this.ownerId = ownerId;
     }
 
-    @Nullable
-    public Size getSizeClassData(SizeClass sizeClass){
+    public Size getThumbSizeClassData(SizeClass sizeClass){
         for(Size size: sizes){
             if(size.type == sizeClass){
                 return size;
@@ -98,6 +95,22 @@ public class VKPhoto {
 
     public void setReposts(Reposts reposts) {
         this.reposts = reposts;
+    }
+
+    public Size getFullSize(){
+        Size fullSize = sizes.get(0);
+
+        for(Size size: sizes) {
+            if(fullSize == null){
+                fullSize = size;
+            } else {
+                if(fullSize.getWidth() < size.getWidth()){
+                    fullSize = size;
+                }
+            }
+        }
+
+        return fullSize;
     }
 
     public class Likes {

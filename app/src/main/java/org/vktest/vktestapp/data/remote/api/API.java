@@ -10,8 +10,6 @@ public interface API {
 
     @GET("photos.getAlbums")
     Call<VKBaseResponse<VKAlbumsList>> getUserAlbums(@Query("owner_id") Long ownerId,
-                                                     @Query("count") Integer count,
-                                                     @Query("offset") Integer offset,
                                                      @Query("need_system") Integer needSystem);
 
     @GET("photos.get")

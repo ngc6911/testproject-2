@@ -6,13 +6,13 @@ import org.vktest.vktestapp.AppExecutors;
 import org.vktest.vktestapp.data.local.db.ImagesDatabase;
 import org.vktest.vktestapp.data.local.db.entities.AlbumEntity;
 import org.vktest.vktestapp.data.local.db.entities.PhotoEntity;
-import org.vktest.vktestapp.data.local.db.entities.relations.AlbumPhotos;
 import org.vktest.vktestapp.data.local.storage.FileStorageType;
 import org.vktest.vktestapp.data.local.storage.files.FileStorage;
 import org.vktest.vktestapp.data.local.storage.settings.Settings;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.List;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -52,7 +52,6 @@ public class LocalDS implements LocalDataSource {
             } catch (IOException e) {
                 e.printStackTrace();
                 if(e.getClass() == FileNotFoundException.class){
-                    entity.setFetched(false);
                     mAppExecutors.getMainThread().execute(() -> callback.onSuccess(entity, null));
                 } else {
                     mAppExecutors.getMainThread().execute(callback::onError);
@@ -61,55 +60,94 @@ public class LocalDS implements LocalDataSource {
         });
     }
 
-
     @Override
-    public void putAlbums(AlbumEntity... albumEntities) {
-        mAppExecutors.getDiskIO().execute(() ->
-                mImagesDatabase.albumsDao().putAlbums(albumEntities));
+    public void updateAlbum(long id, int fetchedCount) {
+        mAppExecutors.getDiskIO().execute(() -> {
+            mImagesDatabase.albumsDao().updateFetchedCount(id, fetchedCount);
+        });
     }
 
     @Override
-    public void putPhoto(PhotoEntity photoEntity, Bitmap smallBitmap, Bitmap largeBitmap) {
+    public void putAlbums(Callback callback, AlbumEntity... albumEntities) {
+        mAppExecutors.getDiskIO().execute(() ->
+        {
+            for(AlbumEntity entity: albumEntities){
+                mImagesDatabase.albumsDao()
+                        .updateAlbum(entity.getId(), entity.getTitle(),
+                                entity.getDescription(), entity.getTotalItems());
+            }
+            mImagesDatabase.albumsDao().putAlbums(albumEntities);
+            mAppExecutors.getMainThread().execute(callback::onSuccess);
+        });
+    }
+
+    @Override
+    public void getAlbums(GetAlbumEntitiesCallback albumEntitiesCallback) {
+        mAppExecutors.getDiskIO().execute(() -> {
+            final List<AlbumEntity> albumEntities = mImagesDatabase.albumsDao().getAlbums();
+            mAppExecutors.getMainThread()
+                    .execute(() -> albumEntitiesCallback.onSuccess(albumEntities));
+
+        });
+    }
+
+    @Override
+    public void putPhoto(PhotoEntity photoEntity, GetPhotoEntityCallback callback) {
         mAppExecutors.getDiskIO().execute(() -> {
             mImagesDatabase.photosDao().addPhoto(photoEntity);
             try {
-                if (largeBitmap != null) {
-                    mFileStorage.putBitmap(largeBitmap,
-                            photoEntity.getBigPhotoFilename(), mSettings.getStorageMode());
+                if (photoEntity.getFullSizeBitmap() != null) {
+                    mFileStorage.putBitmap(photoEntity.getFullSizeBitmap(),
+                            photoEntity.getFullsizeFilename(), mSettings.getStorageMode());
                 }
 
-                if(smallBitmap != null) {
-                    mFileStorage.putBitmap(smallBitmap,
-                            photoEntity.getSmallPhotoFilename(), mSettings.getStorageMode());
+                if(photoEntity.getThumbBitmap() != null) {
+                    mFileStorage.putBitmap(photoEntity.getThumbBitmap(),
+                            photoEntity.getThumbFilename(), mSettings.getStorageMode());
                 }
+
+                photoEntity.getFullSizeBitmap().recycle();
+                photoEntity.setFullSizeBitmap(null);
+
+                mAppExecutors.getMainThread().execute(() -> callback.onSuccess(photoEntity));
 
             } catch (IOException e) {
                 e.printStackTrace();
+                mAppExecutors.getMainThread().execute(callback::onError);
             }
+        });
+    }
+
+    public void getGalleryPhotos(PhotoCallback callback){
+        mAppExecutors.getDiskIO().execute(() -> {
+            final List<PhotoEntity> entities =
+                    mImagesDatabase.photosDao().getAllPhotos(PHOTOS_PAGE_SIZE);
+            try {
+                if(!entities.isEmpty()) {
+                    setThumbs(entities, callback);
+                } else {
+                    mAppExecutors.getMainThread().execute(callback::onNoLocalPhotos);
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+                mAppExecutors.getMainThread().execute(callback::onError);
+            }
+
         });
     }
 
     @Override
     public void getGalleryPhotos(long albumId, long latestPhotoId, PhotoCallback callback) {
         mAppExecutors.getDiskIO().execute(() -> {
-            AlbumPhotos albumPhotos =
-                    mImagesDatabase.albumsDao().getAlbumById(albumId);
-
-            if(albumPhotos.getNonfetchedCount() == 0){
-                int albumsCount = mImagesDatabase.albumsDao().getAlbumsCount();
-                mAppExecutors.getMainThread().execute(() ->
-                        callback.onNetworkAlbumsFetchRequired(albumsCount));
-                return;
+            final List<PhotoEntity> albumPhotos =
+                    mImagesDatabase.photosDao()
+                            .getPhotosByAlbum(albumId, latestPhotoId, PHOTOS_PAGE_SIZE);
+            if(albumPhotos.size() == 0){
+                mAppExecutors.getMainThread().execute(callback::onNoLocalPhotos);
             } else {
-                mAppExecutors.getMainThread().execute(() ->
-                        callback.onNetworkPhotosFetchRequired(albumId, albumPhotos.getPhotos().size()));
-            }
 
-            for(PhotoEntity entity: albumPhotos.getPhotos()){
                 try {
-                    Bitmap smallBitmap = mFileStorage.getBitmap(entity.getSmallPhotoFilename(),
-                            mSettings.getStorageMode());
-                    mAppExecutors.getMainThread().execute(() -> callback.onSuccess(entity, smallBitmap));
+                    setThumbs(albumPhotos, callback);
                 } catch (IOException e) {
                     mAppExecutors.getMainThread().execute(callback::onError);
                     e.printStackTrace();
@@ -117,4 +155,14 @@ public class LocalDS implements LocalDataSource {
             }
         });
     }
+
+    private void setThumbs(List<PhotoEntity> albumPhotos, PhotoCallback callback) throws IOException {
+        for(PhotoEntity entity: albumPhotos){
+                Bitmap bitmapThumb = mFileStorage.getBitmap(entity.getThumbFilename(),
+                    mSettings.getStorageMode());
+                entity.setThumbBitmap(bitmapThumb);
+            }
+
+        mAppExecutors.getMainThread().execute(() -> callback.onPhotoLoaded(albumPhotos));
+        }
 }

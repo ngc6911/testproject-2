@@ -18,8 +18,7 @@ public class ImageViewerPagerAdapter extends FragmentStatePagerAdapter {
 
     @Override
     public Fragment getItem(int position) {
-        mBitmapHelper.setCurrentPhoto(position);
-        return ImageViewerFragment.newInstance();
+        return ImageViewerFragment.newInstance(position);
     }
 
     @Override

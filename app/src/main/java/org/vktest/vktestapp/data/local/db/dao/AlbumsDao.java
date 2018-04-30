@@ -16,16 +16,13 @@ public interface AlbumsDao {
     @Query("SELECT * FROM albums ORDER BY id")
     List<AlbumEntity> getAlbums();
 
-    @Query("SELECT COUNT(*) FROM albums ORDER BY id")
-    int getAlbumsCount();
+    @Query("UPDATE albums SET title = :title, description = :description, " +
+            "total_items = :totalItems WHERE id = :id")
+    void updateAlbum(long id, String title, String description, int totalItems);
 
-    @Query("SELECT * FROM albums WHERE id = :albumId")
-    AlbumPhotos getAlbumById(Long albumId);
+    @Query("UPDATE albums SET fetched_items = :fetchedItems WHERE id = :id")
+    void updateFetchedCount(long id, int fetchedItems);
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     void putAlbums(AlbumEntity... entities);
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    void putAlbum(AlbumEntity entity);
-
 }

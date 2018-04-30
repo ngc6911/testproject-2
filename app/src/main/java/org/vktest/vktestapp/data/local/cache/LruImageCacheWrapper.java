@@ -1,14 +1,18 @@
 package org.vktest.vktestapp.data.local.cache;
 
 import android.graphics.Bitmap;
+import android.support.v7.util.DiffUtil;
 import android.util.LruCache;
 import android.widget.ImageView;
 
+import org.vktest.vktestapp.data.local.LocalDataSource;
+import org.vktest.vktestapp.data.local.db.entities.PhotoEntity;
 import org.vktest.vktestapp.presentation.models.Photo;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
@@ -17,11 +21,12 @@ public class LruImageCacheWrapper implements ImageCache, BitmapHelper {
     private LruCache<String, Bitmap> lruCache;
     private List<Photo> photosList = new ArrayList<>();
     private int currentPosition;
-
+    private LocalDataSource mLocalDataSource;
     private List<OnHelperDatasetChangesListener> mOnHelperDatasetChangesListeners = new ArrayList<>();
 
-    public LruImageCacheWrapper() {
-
+    @Inject
+    public LruImageCacheWrapper(LocalDataSource localDataSource) {
+        mLocalDataSource = localDataSource;
         final int maxMemory = (int) (Runtime.getRuntime().maxMemory() / 1024);
         final int cacheSize = maxMemory / 10;
 
@@ -36,16 +41,34 @@ public class LruImageCacheWrapper implements ImageCache, BitmapHelper {
     @Override
     public void setBitmapToImageView(Photo photo, ImageView view, boolean isThumb) {
         final String src = isThumb ? photo.getPhotoThumbBitmapPath() : photo.getPhotoBitmapPath();
-        view.setImageBitmap(lruCache.get(src));
+        Bitmap b = lruCache.get(src);
+        if (b != null) {
+            view.setImageBitmap(b);
+        } else {
+            mLocalDataSource.getPhoto(photo.getPhotoId(), src,
+                    new LocalDataSource.GetPhotoCallback() {
+                @Override
+                public void onSuccess(PhotoEntity entity, Bitmap bitmap) {
+                    lruCache.put(src, bitmap);
+                    view.setImageBitmap(bitmap);
+                }
+
+                @Override
+                public void onError() {
+
+                }
+            });
+        }
+
     }
 
     @Override
     public void addPhoto(Photo photo) {
-        if(!photosList.contains(photo)) {
+        if(!photosList.contains(photo)){
             photosList.add(photo);
 
             for (OnHelperDatasetChangesListener listener : mOnHelperDatasetChangesListeners) {
-                listener.onDatasetChanges();
+                listener.onDatasetChanges(photosList.size() - 1);
             }
         }
     }
@@ -53,11 +76,6 @@ public class LruImageCacheWrapper implements ImageCache, BitmapHelper {
     @Override
     public Photo getPhoto(int position) {
         return photosList.get(position);
-    }
-
-    @Override
-    public Photo getCurrentPhoto() {
-        return photosList.get(currentPosition);
     }
 
     @Override

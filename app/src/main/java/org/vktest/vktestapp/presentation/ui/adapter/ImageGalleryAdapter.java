@@ -11,8 +11,6 @@ import org.vktest.vktestapp.R;
 import org.vktest.vktestapp.data.local.cache.BitmapHelper;
 import org.vktest.vktestapp.presentation.models.Photo;
 
-import javax.inject.Inject;
-
 import butterknife.BindView;
 import butterknife.ButterKnife;
 
@@ -47,7 +45,7 @@ public class ImageGalleryAdapter extends RecyclerView.Adapter<ImageGalleryAdapte
         bitmapHelper.setBitmapToImageView(bitmapHelper.getPhoto(position),
                 holder.imgvPhoto, true);
 
-        if(bitmapHelper.getPhotoCount() - position <= 5){
+        if(position == getItemCount() - 1) {
             onAdapterItemActionListener.onScrollToBottom(photo);
         }
     }

@@ -11,6 +11,7 @@ import java.util.List;
 public class AlbumPhotos {
     @Embedded
     AlbumEntity album;
+
     @Relation(entity = PhotoEntity.class, parentColumn = "id", entityColumn = "album_id")
     List<PhotoEntity> photos;
 

@@ -1,34 +1,37 @@
 package org.vktest.vktestapp.data.remote;
 
+import android.content.Context;
 import android.graphics.Bitmap;
 
-import org.vktest.vktestapp.data.local.db.entities.PhotoEntity;
+import org.vktest.vktestapp.data.local.db.entities.AlbumEntity;
 import org.vktest.vktestapp.data.remote.api.VKAlbumsList;
-import org.vktest.vktestapp.data.remote.api.VKPhotosList;
+import org.vktest.vktestapp.data.remote.api.VKPhoto;
+
+import java.util.List;
 
 public interface RemoteDataSource {
 
-    int PHOTOS_FETCH_COUNT = 20;
-    int ALBUMS_FETCH_COUNT = 5;
+    int PHOTOS_FETCH_COUNT = 10;
 
     interface GetAlbumsCallback {
         void onSuccess(VKAlbumsList albumsList);
         void onError();
     }
 
-    void getAlbums(Integer offset, GetAlbumsCallback albumsCallback);
+    void getAlbums(GetAlbumsCallback albumsCallback);
 
-    void getPhotos(long albumId, int offset, GetPhotosCallback callback);
+    void getPhotos(List<AlbumEntity> albums, int totalPhotos,
+                   Context context, GetPhotosListCallback callback);
 
-    void fetchBitmap(PhotoEntity entity, FetchPhotoCallback callback);
-
-    interface GetPhotosCallback {
-        void onSuccess(VKPhotosList photos);
+    interface GetPhotosListCallback {
+        void onNewPhoto(VKPhoto vkPhoto, Bitmap thumbBitmap, Bitmap fullsizeBitmap);
+        void onAlbumFetchFinish(AlbumEntity album);
         void onError();
     }
 
-    interface FetchPhotoCallback {
-        void onSuccess(Bitmap thumb, Bitmap fullsize);
+    interface GetNewPhotosCallback {
+        void onNewPhoto(VKPhoto vkPhoto, Bitmap thumbBitmap, Bitmap fullsizeBitmap);
+        void onFinish();
         void onError();
     }
 }

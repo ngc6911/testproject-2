@@ -1,19 +1,25 @@
 package org.vktest.vktestapp.data.remote;
 
+import android.content.Context;
+import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 
 import com.vk.sdk.VKAccessToken;
 
 import org.vktest.vktestapp.AppExecutors;
-import org.vktest.vktestapp.data.local.db.entities.PhotoEntity;
+import org.vktest.vktestapp.data.DataUtils;
+import org.vktest.vktestapp.data.local.db.entities.AlbumEntity;
 import org.vktest.vktestapp.data.remote.api.API;
 import org.vktest.vktestapp.data.remote.api.VKAlbumsList;
 import org.vktest.vktestapp.data.remote.api.VKBaseResponse;
+import org.vktest.vktestapp.data.remote.api.VKPhoto;
 import org.vktest.vktestapp.data.remote.api.VKPhotosList;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -39,13 +45,11 @@ public class RemoteDS implements RemoteDataSource{
     }
 
     @Override
-    public void getAlbums(Integer offset, GetAlbumsCallback callback) {
+    public void getAlbums(GetAlbumsCallback callback) {
         mAppExecutors.getNetworkIO().execute(() -> {
             try {
                 Response<VKBaseResponse<VKAlbumsList>> response = mApi.getUserAlbums(
                         Long.parseLong(VKAccessToken.currentToken().userId),
-                        ALBUMS_FETCH_COUNT,
-                        offset,
                         1).execute();
 
                 VKBaseResponse<VKAlbumsList> vkAlbumsListResponse = response.body();
@@ -61,39 +65,66 @@ public class RemoteDS implements RemoteDataSource{
 
             } catch (IOException e) {
                 e.printStackTrace();
-                callback.onError();
+                mAppExecutors.getMainThread().execute(callback::onError);
             }
         });
     }
 
     @Override
-    public void getPhotos(long albumId, int offset, GetPhotosCallback callback) {
+    public void getPhotos(List<AlbumEntity> albums, int totalPhotos, Context context,
+                          GetPhotosListCallback photosListCallback) {
         mAppExecutors.getNetworkIO().execute(() -> {
-            try {
-                Response<VKBaseResponse<VKPhotosList>> r =
-                        mApi.getPhotosFromAlbum(
-                                null, albumId, 1,
-                                0, 1,
-                                PHOTOS_FETCH_COUNT, offset).execute();
+            int screenSize = context.getResources().getConfiguration().screenLayout
+                    & Configuration.SCREENLAYOUT_SIZE_MASK;
 
-                VKBaseResponse<VKPhotosList> vkPhotosListResponse = r.body();
+            int totalFetchLeft = totalPhotos;
+            for(AlbumEntity album: albums) {
 
-                if (vkPhotosListResponse != null && vkPhotosListResponse.isSuccessful()) {
-                    mAppExecutors.getMainThread()
-                            .execute(() -> callback.onSuccess(vkPhotosListResponse.getSuccess()));
+                int canFetch = album.getTotalItems() - album.getItemsFetchedCount();
+                canFetch = canFetch >= totalFetchLeft ? totalFetchLeft : canFetch;
 
-                } else if(vkPhotosListResponse != null && !vkPhotosListResponse.isSuccessful()){
-                    mAppExecutors.getMainThread().execute(callback::onError);
+                try {
+                    Response<VKBaseResponse<VKPhotosList>> r = mApi.getPhotosFromAlbum(null,
+                            album.getId(), 1, 0, 1,
+                            canFetch, album.getItemsFetchedCount())
+                            .execute();
+
+                    VKBaseResponse<VKPhotosList> vkPhotosListResponse = r.body();
+                    if (vkPhotosListResponse != null && vkPhotosListResponse.isSuccessful()) {
+                        List<VKPhoto> vkPhotos = vkPhotosListResponse.getSuccess().getItems();
+
+                        final VKPhoto.SizeClass size = DataUtils.getThumbSizeClass(screenSize);
+
+                        for(VKPhoto vkPhoto: vkPhotos) {
+                            final Bitmap thumb = fetchBitmapSync(
+                                    vkPhoto.getThumbSizeClassData(size).getSrc());
+
+                            final Bitmap fullSize = fetchBitmapSync(
+                                    vkPhoto.getFullSize().getSrc());
+
+                            mAppExecutors.getMainThread()
+                                    .execute(() -> photosListCallback.onNewPhoto(vkPhoto, thumb, fullSize));
+                        }
+
+                        album.setItemsFetchedCount(album.getItemsFetchedCount() + canFetch);
+
+                        mAppExecutors.getMainThread()
+                                .execute(() -> photosListCallback.onAlbumFetchFinish(album));
+                    }
+
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    mAppExecutors.getMainThread().execute(photosListCallback::onError);
                 }
 
-            } catch (IOException e) {
-                callback.onError();
-                e.printStackTrace();
+                totalFetchLeft -= canFetch;
             }
+
         });
+
     }
 
-    private Bitmap fetchBitmapSync(String src) throws IOException{
+    private Bitmap fetchBitmapSync(String src) throws IOException {
         Request r = new Request.Builder().url(src).build();
         okhttp3.Response response = mOkHttpClient.newCall(r).execute();
         ResponseBody body = response.body();
@@ -106,19 +137,5 @@ public class RemoteDS implements RemoteDataSource{
         } else {
             throw new IOException(String.format("response body is null for GET from %s: ", src));
         }
-    }
-
-    @Override
-    public void fetchBitmap(PhotoEntity photoEntity, FetchPhotoCallback callback) {
-        mAppExecutors.getNetworkIO().execute(() -> {
-            try {
-                Bitmap small = fetchBitmapSync(photoEntity.getSmallImageURI());
-                Bitmap large = fetchBitmapSync(photoEntity.getLargeImageURI());
-                mAppExecutors.getMainThread().execute(() -> callback.onSuccess(small, large));
-            } catch (IOException e) {
-                e.printStackTrace();
-                callback.onError();
-            }
-        });
     }
 }

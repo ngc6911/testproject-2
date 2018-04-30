@@ -3,7 +3,6 @@ package org.vktest.vktestapp.presentation.ui.imageviewer;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,7 +17,6 @@ import org.vktest.vktestapp.TestApp;
 import org.vktest.vktestapp.data.local.cache.BitmapHelper;
 import org.vktest.vktestapp.presentation.models.Photo;
 import org.vktest.vktestapp.presentation.presenters.ImageViewerPresenter;
-import org.vktest.vktestapp.presentation.ui.imagegallery.ImageGalleryView;
 
 import javax.inject.Inject;
 
@@ -28,8 +26,14 @@ import butterknife.OnClick;
 
 public class ImageViewerFragment extends MvpAppCompatFragment implements ImageViewerView {
 
-    public static Fragment newInstance() {
-        return new ImageViewerFragment();
+    public static final String FRAGMENT_PAGER_POSITION = "bundle-key-pager-position";
+
+    public static ImageViewerFragment newInstance(int position) {
+        Bundle args = new Bundle();
+        args.putInt(FRAGMENT_PAGER_POSITION, position);
+        ImageViewerFragment fragment = new ImageViewerFragment();
+        fragment.setArguments(args);
+        return fragment;
     }
     
     @BindView(R.id.imgv_photo_fullsize)
@@ -60,7 +64,11 @@ public class ImageViewerFragment extends MvpAppCompatFragment implements ImageVi
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         TestApp.getsAppComponent().inject(this);
-        imageViewerPresenter.getFullsizePhoto();
+        int position = 0;
+        if (getArguments() != null) {
+            position = getArguments().getInt(FRAGMENT_PAGER_POSITION);
+        }
+        imageViewerPresenter.getFullsizePhoto(position);
     }
 
     @Nullable

@@ -9,10 +9,13 @@ import org.vktest.vktestapp.data.local.cache.BitmapHelper;
 import org.vktest.vktestapp.presentation.models.Photo;
 import org.vktest.vktestapp.presentation.ui.imagegallery.ImageGalleryView;
 
+import java.util.List;
+
 import javax.inject.Inject;
 
 @InjectViewState
-public class ImageGalleryPresenter extends BasePresenter<ImageGalleryView> {
+public class ImageGalleryPresenter extends BasePresenter<ImageGalleryView>
+        implements BitmapHelper.OnHelperDatasetChangesListener{
 
     @Inject
     BitmapHelper mBitmapHelper;
@@ -22,21 +25,16 @@ public class ImageGalleryPresenter extends BasePresenter<ImageGalleryView> {
 
     public ImageGalleryPresenter() {
         TestApp.getsAppComponent().inject(this);
-        mBitmapHelper.addOnHelperDatasetChangesListener(() -> getViewState().renderDatasetChanges());
+        mBitmapHelper.addOnHelperDatasetChangesListener(this);
     }
 
     @Override
     protected void onFirstViewAttach() {
         super.onFirstViewAttach();
-        getPhotos(null);
-    }
-
-    public void getPhotos(Photo lastPhoto){
-        mRepository.getPhotos(lastPhoto, new Repository.GetPhotosCallback() {
+        mRepository.getFirstPhotos(new Repository.GetPhotosListCallback() {
             @Override
-            public void onSuccess(Photo photo) {
-                mBitmapHelper.addPhoto(photo);
-                getViewState().renderPhoto(photo);
+            public void onSuccess(Photo photos) {
+                mBitmapHelper.addPhoto(photos);
             }
 
             @Override
@@ -44,5 +42,24 @@ public class ImageGalleryPresenter extends BasePresenter<ImageGalleryView> {
                 getViewState().renderError(R.string.err_toast_txt_common);
             }
         });
+    }
+
+    public void getPhotos(Photo lastPhoto){
+        mRepository.getNextPhotos(lastPhoto, new Repository.GetPhotosListCallback() {
+            @Override
+            public void onSuccess(Photo photo) {
+                mBitmapHelper.addPhoto(photo);
+            }
+
+            @Override
+            public void onError() {
+
+            }
+        });
+    }
+
+    @Override
+    public void onDatasetChanges(int position) {
+        getViewState().renderDatasetChanges(position);
     }
 }

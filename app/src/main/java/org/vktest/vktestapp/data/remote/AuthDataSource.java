@@ -6,9 +6,8 @@ import android.content.Intent;
 
 public interface AuthDataSource {
 
-    public interface AutorizationCallback{
+    interface AutorizationCallback{
         void onSuccess();
-        void onPending();
         void onError();
     }
 

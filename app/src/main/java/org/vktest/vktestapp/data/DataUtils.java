@@ -9,49 +9,78 @@ import org.vktest.vktestapp.data.remote.api.VKAlbumsList;
 import org.vktest.vktestapp.data.remote.api.VKPhoto;
 import org.vktest.vktestapp.presentation.models.Photo;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class DataUtils {
 
     public static Photo photoEntityToModel(PhotoEntity entity) {
-        return new Photo(
+        Photo photo = new Photo(
                 entity.getAlbumId(),
                 entity.getId(),
-                entity.getBigPhotoFilename(),
-                entity.getSmallPhotoFilename(),
+                entity.getFullsizeFilename(),
+                entity.getThumbFilename(),
                 entity.getDate());
+
+        photo.setLikesCount(entity.getLikesCount());
+        photo.setRepostsCount(entity.getRepostsCount());
+        photo.setText(entity.getText());
+        return photo;
+    }
+
+    public static int maxFetchCountFrom(List<AlbumEntity> entities, int maxFetch){
+        int canFetchCountTotal = 0;
+        for(AlbumEntity entity: entities) {
+            int canFetchCount = entity.getTotalItems() - entity.getItemsFetchedCount();
+
+
+            if(canFetchCountTotal + canFetchCount >= maxFetch){
+                return maxFetch;
+            } else {
+                canFetchCountTotal += canFetchCount;
+            }
+        }
+
+        return canFetchCountTotal;
     }
 
 
-    public static PhotoEntity photoRemoteToEntity(VKPhoto vkPhoto, VKPhoto.SizeClass sizeClass){
+
+    public static List<AlbumEntity> filterAlbumsToFetchFrom(List<AlbumEntity> entities, int maxFetch){
+        final List<AlbumEntity> entitiesToFetch = new ArrayList<>();
+        int canFetchCountTotal = 0;
+        for(AlbumEntity entity: entities) {
+            int canFetchCount = entity.getTotalItems() - entity.getItemsFetchedCount();
+
+            if(canFetchCount > 0){
+                entitiesToFetch.add(entity);
+            }
+
+            if(canFetchCountTotal + canFetchCount >= maxFetch){
+                return entitiesToFetch;
+            }
+        }
+
+        return entitiesToFetch;
+    }
+
+    public static List<Photo> photoEntitiesToModels(List<PhotoEntity> entities) {
+        List<Photo> models = new ArrayList<>(entities.size());
+        for(PhotoEntity entity: entities){
+            models.add(photoEntityToModel(entity));
+        }
+        return models;
+    }
+
+    public static PhotoEntity photoRemoteToEntity(VKPhoto vkPhoto){
         PhotoEntity entity = new PhotoEntity();
         entity.setId(vkPhoto.getId());
         entity.setOwnerId(vkPhoto.getOwnerId());
         entity.setAlbumId(vkPhoto.getAlbumId());
         entity.setDate(vkPhoto.getDate());
-        entity.setFetched(false);
         entity.setRepostsCount(vkPhoto.getReposts().getCount());
         entity.setLikesCount(vkPhoto.getLikes().getCount());
         entity.setText(vkPhoto.getText());
-
-        VKPhoto.Size thumbSize = vkPhoto.getSizeClassData(sizeClass);
-        VKPhoto.Size fullSize = null;
-
-        for(VKPhoto.Size size: vkPhoto.getSizes()) {
-            if(fullSize == null){
-                fullSize = size;
-            } else {
-                if(fullSize.getWidth() < size.getWidth()){
-                    fullSize = size;
-                }
-            }
-        }
-
-        if (thumbSize != null) {
-            entity.setSmallImageURI(thumbSize.getSrc());
-        }
-
-        if (fullSize != null) {
-            entity.setLargeImageURI(fullSize.getSrc());
-        }
         return entity;
     }
 

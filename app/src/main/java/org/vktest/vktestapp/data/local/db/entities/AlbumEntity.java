@@ -20,9 +20,20 @@ public class AlbumEntity {
     private String description;
 
     @ColumnInfo(name = "total_items")
-    private Integer totalItems;
+    private int totalItems;
 
-    public Integer getTotalItems() {
+    @ColumnInfo(name = "fetched_items")
+    private int itemsFetchedCount = 0;
+
+    public int getItemsFetchedCount() {
+        return itemsFetchedCount;
+    }
+
+    public void setItemsFetchedCount(Integer itemsFetchedCount) {
+        this.itemsFetchedCount = itemsFetchedCount;
+    }
+
+    public int getTotalItems() {
         return totalItems;
     }
 

@@ -47,8 +47,8 @@ public class LocalDataSourceModule {
 
     @Provides
     @Singleton
-    public LruImageCacheWrapper provideBitmapCache(){
-        return new LruImageCacheWrapper();
+    public LruImageCacheWrapper provideBitmapCache(LocalDS localDS){
+        return new LruImageCacheWrapper(localDS);
     }
 
     @Provides

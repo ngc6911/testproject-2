@@ -13,5 +13,5 @@ public interface ImageGalleryView extends BaseView {
     @StateStrategyType(OneExecutionStateStrategy.class)
     void renderPhoto(Photo photo);
 
-    void renderDatasetChanges();
+    void renderDatasetChanges(int position);
 }
