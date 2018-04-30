@@ -19,7 +19,7 @@ import javax.inject.Singleton;
 public class LruImageCacheWrapper implements ImageCache, BitmapHelper {
 
     private LruCache<String, Bitmap> lruCache;
-    private List<Photo> photosList = new ArrayList<>();
+    private final List<Photo> photosList = new ArrayList<>();
     private int currentPosition;
     private LocalDataSource mLocalDataSource;
     private List<OnHelperDatasetChangesListener> mOnHelperDatasetChangesListeners = new ArrayList<>();
@@ -64,11 +64,13 @@ public class LruImageCacheWrapper implements ImageCache, BitmapHelper {
 
     @Override
     public void addPhoto(Photo photo) {
-        if(!photosList.contains(photo)){
-            photosList.add(photo);
+        synchronized (photosList){
+            if(!photosList.contains(photo)){
+                photosList.add(photo);
 
-            for (OnHelperDatasetChangesListener listener : mOnHelperDatasetChangesListeners) {
-                listener.onDatasetChanges(photosList.size() - 1);
+                for (OnHelperDatasetChangesListener listener : mOnHelperDatasetChangesListeners) {
+                    listener.onDatasetChanges(photosList.size() - 1);
+                }
             }
         }
     }
